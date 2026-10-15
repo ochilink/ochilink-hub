@@ -1,0 +1,176 @@
+/* Ochilink mobile standard v1.0. Desktop layouts retain their existing styles. */
+:root {
+    --space-1: 8px;
+    --space-2: 16px;
+    --space-3: 24px;
+    --space-4: 32px;
+}
+*, *::before, *::after { box-sizing: border-box; }
+/* Allow dashboard grid tracks to shrink around long audit identifiers. */
+:is(main, .mobile-auth) .grid > *, :is(main, .mobile-auth) .flex > * { min-width: 0; }
+
+.mobile-availability-row > span { min-width: 0; max-width: 100%; overflow-wrap: anywhere; word-break: break-word; }
+
+@media (max-width: 767px) {
+    .mobile-auth,
+    .mobile-container,
+    body[data-hub-page='admin'] :is(main, .mobile-auth),
+    body[data-hub-page='booking'] :is(main, .mobile-auth),
+    .mobile-public-container {
+        width: 100%;
+        max-width: 480px;
+        min-width: 0;
+        margin-inline: auto;
+        padding-inline: var(--space-2);
+    }
+    .mobile-auth > div > div:first-child { padding: 0; }
+    :is(main, .mobile-auth) :is(.mt-3, .mt-4) { margin-top: var(--space-2); }
+    :is(main, .mobile-auth) :is(.mb-3, .mb-4) { margin-bottom: var(--space-2); }
+    :is(main, .mobile-auth) :is(.mt-5, .mt-6) { margin-top: var(--space-3); }
+    :is(main, .mobile-auth) :is(.mb-5, .mb-6) { margin-bottom: var(--space-3); }
+    #root, #root > div, :is(main, .mobile-auth), section, form, fieldset, .flex, .grid {
+        min-width: 0;
+    }
+    :is(main, .mobile-auth) :where(div, section, p, span, label, a, pre, code, summary) {
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    :is(main, .mobile-auth) .flex, :is(main, .mobile-auth) .inline-flex { flex-wrap: wrap; }
+    :is(main, .mobile-auth) .truncate {
+        white-space: normal;
+        text-overflow: clip;
+        overflow-wrap: anywhere;
+    }
+    .mobile-card,
+    :is(main, .mobile-auth) :is(div, section, article)[class*='rounded-'][class~='border'] {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        padding: var(--space-2);
+        height: auto;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    .mobile-card { background: var(--card-bg, var(--bg-elevated, #111)); }
+    body[data-hub-page] :is(main, .mobile-auth) h1 { font-size: clamp(20px, 5vw, 24px); line-height: 1.3; }
+    body[data-hub-page] :is(main, .mobile-auth) h2 { font-size: clamp(18px, 4.5vw, 22px); line-height: 1.3; }
+    body[data-hub-page] :is(main, .mobile-auth) :is(p, span, label) { font-size: clamp(14px, 3.5vw, 16px); line-height: 1.4; }
+    body[data-hub-page] :is(main, .mobile-auth) :is(input, select, textarea) {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 44px;
+        padding: var(--space-1) var(--space-2);
+        font-size: 16px; /* Prevent focus zoom on iOS. */
+    }
+    body[data-hub-page] .mobile-auth input:is([type='checkbox'], [type='radio']) { width: 24px; height: 24px; min-height: 24px; padding: 0; flex: 0 0 24px; }
+    .mobile-auth label.flex { flex-wrap: nowrap; min-height: 44px; }
+    :is(main, .mobile-auth) input[type='datetime-local'] { display: block; appearance: none; }
+    :is(main, .mobile-auth) input[type='datetime-local']::-webkit-date-and-time-value { text-align: left; min-width: 0; }
+    :is(main, .mobile-auth) :is(button, .mobile-button, a.focus-ring, a[class*='rounded-full']) {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+        min-height: 44px;
+        height: auto;
+        padding: var(--space-1) var(--space-2);
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+    :is(main, .mobile-auth) :is(.flex, .grid) { gap: var(--space-1); }
+    .mobile-availability-form { display: flex; flex-direction: column; gap: var(--space-2); }
+    .mobile-availability-form > * { width: 100%; min-width: 0; }
+    .mobile-availability-row { display: flex; flex-direction: column; align-items: stretch; gap: var(--space-1); }
+    .mobile-availability-row > span { min-width: 0; overflow-wrap: anywhere; }
+    .mobile-admin-header {
+        height: auto;
+        min-height: 64px;
+        flex-wrap: wrap;
+        gap: var(--space-1);
+        padding: var(--space-2);
+        width: 100%;
+    }
+    .mobile-admin-header > * { min-width: 0; max-width: 100%; }
+    .mobile-admin-header h1 { font-size: clamp(18px, 4.5vw, 22px); line-height: 1.3; }
+    .mobile-session { margin-left: 0; flex: 1 1 100%; flex-wrap: wrap; }
+    .mobile-session > div { height: auto; min-height: 32px; flex-wrap: wrap; padding: var(--space-1); font-size: 14px; }
+    .mobile-drawer { width: min(320px, calc(100vw - 32px)); max-width: 100%; }
+    .mobile-drawer nav button { white-space: normal; min-height: 44px; height: auto; padding-block: var(--space-1); }
+    .mobile-public-header > .mobile-public-container {
+        height: auto;
+        min-height: 64px;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: var(--space-2);
+        padding-block: var(--space-2);
+    }
+    .mobile-brand { flex: 1 1 100%; min-width: 0; }
+    .mobile-brand > div { display: flex; flex-wrap: wrap; gap: var(--space-1); }
+    .mobile-brand span { white-space: normal; overflow-wrap: normal; word-break: normal; }
+    .mobile-brand > div > span:first-child { white-space: nowrap; }
+    .mobile-brand > div > span:last-child { margin-left: 0; }
+    .mobile-nav-actions { display: flex; flex: 1 1 100%; gap: var(--space-1); min-width: 0; }
+    .mobile-nav-actions > :is(a, button) {
+        min-height: 44px;
+        max-width: 100%;
+        flex: 1 1 0;
+        width: auto;
+        padding-inline: var(--space-2);
+    }
+    .mobile-nav-actions > button[aria-label] { flex: 0 0 44px; width: 44px; padding: var(--space-1); }
+    .icon, .mobile-nav-actions svg { max-width: 24px; height: auto; }
+    .mobile-public-subnav { display: flex; flex-wrap: wrap; gap: var(--space-2); height: auto; min-height: 44px; padding: var(--space-1) var(--space-2); }
+    .mobile-public-subnav > div { display: flex; flex-wrap: wrap; gap: var(--space-2); min-width: 0; }
+    /* Keep the seven data columns inside the chart, rather than wrapping days. */
+    .mobile-activity-row { flex-wrap: nowrap !important; }
+    .mobile-activity-row > span { margin-top: var(--space-1); }
+    .mobile-activity-row > div { flex: 1 1 0; min-width: 0; }
+    .mobile-audit-bars { display: flex; flex-wrap: nowrap !important; gap: var(--space-1); }
+    .mobile-audit-bars > div { flex: 1 1 0; min-width: 0; }
+    body[data-hub-page] :is(main, .mobile-auth) .mobile-audit-bars span { font-size: 12px; line-height: 1.4; }
+    .mobile-audit-bars > div > div { padding: 0; border-radius: 8px; }
+    /* Preserve all columns as labeled fields; never crop or hide record data. */
+    .mobile-table { display: flex; flex-direction: column; width: 100%; min-width: 0 !important; max-width: 100%; }
+    .mobile-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    .mobile-table tbody { display: flex; flex-direction: column; width: 100%; gap: var(--space-2); }
+    .mobile-table tbody tr { display: flex; flex-direction: column; width: 100%; min-width: 0; gap: var(--space-1); padding-block: var(--space-2); }
+    .mobile-table tbody tr + tr { border-top: 1px solid var(--border, #334155); }
+    .mobile-table td {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        width: 100%;
+        max-width: 100% !important;
+        min-width: 0;
+        gap: var(--space-1);
+        padding: var(--space-1) 0 !important;
+        text-align: left;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    .mobile-table td[data-label]::before { content: attr(data-label); flex: 0 0 100%; font-weight: 700; opacity: .65; font-size: 12px; }
+    .mobile-table td > :is(div, span, a, details) { min-width: 0; max-width: 100%; }
+    .mobile-table td pre { white-space: pre-wrap; }
+    .mobile-table td[colspan] { justify-content: center; }
+    .mobile-table td[colspan]::before { display: none; }
+}
+@media (max-width: 480px) {
+    :is(main, .mobile-auth) .grid { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+    :is(main, .mobile-auth) .grid > * { flex: 1 1 100%; min-width: 0; max-width: 100%; }
+    :is(main, .mobile-auth) [class*='space-y-'] > :not([hidden]) ~ :not([hidden]) { margin-top: var(--space-2); }
+    :is(main, .mobile-auth) [class*='gap-'] { gap: var(--space-1); }
+    body[data-hub-page] :is(main, .mobile-auth) h1 { font-size: clamp(20px, 5vw, 24px); }
+    body[data-hub-page] :is(main, .mobile-auth) h2 { font-size: clamp(18px, 4.5vw, 22px); }
+    .mobile-choice-row { display: flex !important; flex-wrap: wrap; gap: var(--space-1); }
+    .mobile-choice-row > button { flex: 1 1 80px !important; padding: var(--space-1); }
+    .mobile-time-row > button { flex-basis: 112px !important; }
+    body[data-hub-page='booking'] section h1 { font-size: clamp(20px, 5vw, 24px); line-height: 1.3; }
+    body[data-hub-page='booking'] section.mobile-public-container { padding-block: var(--space-4); }
+}
+
+@media (min-width: 768px) {
+    .mobile-table-panel { min-width: 0; max-width: 100%; overflow-x: auto; }
+}
