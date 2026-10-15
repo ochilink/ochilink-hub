@@ -84,6 +84,9 @@ window.HubFeatureUI = function HubFeatureUI({
     };
     React.useEffect(() => {
         load().catch((error) => setMessage(error.message));
+        if (section === 'settings') return;
+        const timer = setInterval(() => load().catch((error) => setMessage(error.message)), 15000);
+        return () => clearInterval(timer);
     }, [section]);
     async function run(fn) {
         setBusy(true);
@@ -310,6 +313,10 @@ window.HubFeatureUI = function HubFeatureUI({
         'div',
         { className: 'space-y-4 mt-4' },
         status,
+        button('Copy public booking link', () => run(async () => {
+            await navigator.clipboard.writeText(location.origin + '/booking');
+            setMessage('Public booking link copied.');
+        })),
         card(
             'AVAILABILITY',
             h(
@@ -373,7 +380,7 @@ window.HubFeatureUI = function HubFeatureUI({
                                 className:
                                     'flex flex-wrap gap-3 items-center mono text-[11px]',
                             },
-                            `${new Date(slot.starts_at).toLocaleString()} – ${new Date(slot.ends_at).toLocaleTimeString()}`,
+                            `${new Date(slot.starts_at).toLocaleString()} – ${new Date(slot.ends_at).toLocaleTimeString()} · ${slot.reserved_by ? "Reserved by " + slot.reserved_by : "Available"}`,
                             button('Remove', () =>
                                 run(async () => {
                                     await api('availability-admin', 'DELETE', {

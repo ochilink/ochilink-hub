@@ -281,7 +281,14 @@ export function createHandler(poolProvider = getPool) {
                 const email = text(body.client_email, 254).toLowerCase();
                 if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
                     fail(400, 'Enter a valid email.');
-                const notes = text(body.notes ?? '', 3000, false);
+                let notes = text(body.notes ?? '', 3000, false);
+                const duration = body.duration_minutes == null ? null : Number(body.duration_minutes);
+                if (duration !== null && ![60,120,180].includes(duration)) fail(400, 'Choose 1, 2 or 3 hours.');
+                if (body.booking && !body.slot_id) fail(400, 'Choose an available appointment slot.');
+                if (body.service !== undefined) {
+                    if (!['Website Audit','Real Estate Tech','Custom App','CRM Setup','General'].includes(body.service)) fail(400, 'Choose a valid service.');
+                    notes = `Service: ${body.service}\nPhone: ${text(body.phone ?? '', 60, false)}\n${notes}`;
+                }
                 const ip = String(
                     req.headers['x-forwarded-for'] ||
                         req.socket?.remoteAddress ||
@@ -294,22 +301,22 @@ export function createHandler(poolProvider = getPool) {
                     let slot = null;
                     if (body.slot_id)
                         slot = await reserveSlot(client, body.slot_id);
+                    if (duration && (!slot || duration * 60000 > new Date(slot.ends_at)-new Date(slot.starts_at))) fail(409, 'Choose a slot long enough for this duration.');
+                    const minutes = duration || (slot ? Math.round((new Date(slot.ends_at)-new Date(slot.starts_at))/60000) : 120);
+                    const pricing = (await client.query("SELECT value FROM site_settings WHERE key='consultation_pricing'")).rows[0]?.value;
+                    const quote = pricing ? Math.round(Math.max(Number(pricing.minimum), Number(pricing.hourly)*minutes/60)*100)/100 : null;
+                    if (body.booking && (!Number.isFinite(quote) || quote === null || quote <= 0)) fail(503, 'Booking pricing is temporarily unavailable.');
                     const result = await client.query(
-                        `INSERT INTO consultations(client_name,client_email,notes,slot_id,scheduled_at,duration_minutes,reserved_until)
-                    VALUES ($1,$2,$3,$4,$5,$6,CASE WHEN $4::uuid IS NOT NULL THEN now()+interval '30 minutes' ELSE NULL END) RETURNING id`,
+                        `INSERT INTO consultations(client_name,client_email,notes,slot_id,scheduled_at,duration_minutes,amount,reserved_until)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,CASE WHEN $4::uuid IS NOT NULL THEN now()+interval '30 minutes' ELSE NULL END) RETURNING id`,
                         [
                             clientName,
                             email,
                             notes,
                             slot?.id || null,
                             slot?.starts_at || null,
-                            slot
-                                ? Math.round(
-                                      (new Date(slot.ends_at) -
-                                          new Date(slot.starts_at)) /
-                                          60000,
-                                  )
-                                : 120,
+                            minutes,
+                            quote,
                         ],
                     );
                     await audit(client, null, 'CONSULTATION_REQUESTED', {

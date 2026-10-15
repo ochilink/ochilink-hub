@@ -86,3 +86,13 @@ Automated tests use embedded PostgreSQL, real bcrypt/TOTP/Stripe signature verif
 - https://vercel.com/docs/functions/runtimes/node-js
 - https://vercel.com/docs/cron-jobs/usage-and-pricing
 - https://datatracker.ietf.org/doc/html/rfc6238
+
+
+## Public booking acceptance
+
+- Public URL is `/booking` on the current deployment host; the custom domain works after domain activation. Admin Consultations opens this in a new tab and can copy its URL.
+- Add a future availability window in the timezone shown in admin. A session starts at that window's start; choose a window long enough for the desired 1/2/3-hour session. Public dates come exclusively from published database slots. New York labels account for daylight saving.
+- Availability and admin consultation data refresh every 15 seconds. Booked/temporarily reserved slots are disabled publicly, with no customer identity exposed. Concurrent booking is checked under the existing database lock.
+- A request persists name, email, service, optional phone, notes, duration and server-calculated quote. It reserves the slot for 30 minutes pending admin confirmation. Confirm it as Scheduled before the hold expires to retain it.
+- Quoted totals are not revenue. Recorded paid revenue increases only after a verified payment. Existing Stripe activation remains necessary for payments.
+- `/api/availability` exposes public GET and administrator-only mutations; `/api/consultations` uses the existing validated request flow. No additional migration is needed beyond 001–003.

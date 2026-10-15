@@ -19,6 +19,8 @@
 
 ## Complete Hub sections (pending activation)
 
+- Wired the uploaded public booking layout at /booking to live availability, server-quoted pricing and consultation requests; matched the landing navbar and linked scheduling actions. Added authenticated availability and public consultation API aliases. Booked slots expose no client identity.
+
 - Matched the navbar Login button to the supplied reference, placed after Schedule, and removed the navbar email.
 
 - Added Admin Login links to desktop and mobile landing-page navigation.

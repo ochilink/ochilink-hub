@@ -35,7 +35,7 @@ async function page(file, fetch) {
 }
 const result = (body) =>
     Promise.resolve({ ok: true, status: 200, json: async () => body });
-test('landing renders database apps, counts, pricing and a working request form', async () => {
+test('landing renders database catalog and pricing with the login navigation', async () => {
     let requests = 0;
     const dom = await page('public/index.html', async (url, options) => {
         if (url.includes('availability')) return result({ slots: [] });
@@ -69,26 +69,10 @@ test('landing renders database apps, counts, pricing and a working request form'
             document.body.textContent,
             /Fitness|\$75|\$150|5 ACTIVE/,
         );
-        const button = [...document.querySelectorAll('button')].find(
-            (el) => el.textContent === 'Schedule Consultation',
-        );
-        button.click();
-        await waitFor(() => document.querySelector('input[name=client_name]'));
-        document.querySelector('input[name=client_name]').value = 'Visitor';
-        document.querySelector('input[name=client_email]').value =
-            'visitor@example.test';
-        document
-            .querySelector('form')
-            .dispatchEvent(
-                new dom.window.Event('submit', {
-                    bubbles: true,
-                    cancelable: true,
-                }),
-            );
-        await waitFor(() =>
-            document.body.textContent.includes('Request received'),
-        );
-        assert.equal(requests, 1);
+        const button = [...document.querySelectorAll('button')].find(el => el.textContent === 'Schedule Consultation');
+        assert.match(button.getAttribute('class'), /rounded-full/);
+        assert.equal(document.querySelector('a[href="/admin/"]').textContent, 'Login →');
+        assert.equal(requests, 0);
     } finally {
         dom.window.close();
     }
@@ -347,4 +331,24 @@ test('analytics waits for consent before submitting visitor events', async () =>
     } finally {
         dom.window.close();
     }
+});
+
+test('booking renders live slots, real booked state, pricing and landing navbar', async () => {
+    const dom = await page('public/booking/index.html', async url => {
+        if (url === '/api/availability') return result({ slots: [{ id: 'available', starts_at: '2026-10-20T14:00:00Z', ends_at: '2026-10-20T17:00:00Z' }], booked_slots: [{id:'busy', starts_at:'2026-10-20T18:00:00Z',ends_at:'2026-10-20T19:00:00Z',is_booked:true}] });
+        return result({pricing:{hourly:95,minimum:190}});
+    });
+    try {
+        const d = dom.window.document;
+        await waitFor(() => d.body.textContent.includes('10:00 AM EDT'));
+        assert.equal(d.querySelector('a[href="/admin/"]').textContent, 'Login →');
+        assert.match(d.body.textContent, /\$190/);
+        assert.doesNotMatch(d.body.textContent, /in-memory|No backend|coming soon|Calendar synced/);
+        const booked = [...d.querySelectorAll('button')].find(b => b.textContent.includes('Booked'));
+        assert.equal(booked.disabled, true);
+        const three = [...d.querySelectorAll('button')].find(b => b.textContent.includes('3 hours'));
+        three.click();
+        await waitFor(() => d.body.textContent.includes('$285'));
+        assert.equal(d.querySelector('header').textContent.includes('ramone@'), false);
+    } finally { dom.window.close(); }
 });

@@ -151,10 +151,17 @@ test('availability publishes real slots and refuses overlapping slots', async ()
     );
 });
 test('booking a slot reserves it and a second request cannot double-book', async () => {
+    const tooLong = await request('consultations', 'POST', {client_name:'Client',client_email:'client@example.test',slot_id:slotId,duration_minutes:180,booking:true}, '');
+    assert.equal(tooLong.status, 409);
+    assert.equal((await pool.query('SELECT id FROM consultations')).rows.length, 0);
     const body = {
         client_name: 'Client',
         client_email: 'client@example.test',
         notes: 'Build an app',
+        phone: '+15555550100',
+        service: 'Custom App',
+        duration_minutes: 60,
+        booking: true,
         slot_id: slotId,
     };
     assert.equal(
@@ -175,6 +182,13 @@ test('booking a slot reserves it and a second request cannot double-book', async
     const row = (await pool.query('SELECT * FROM consultations')).rows[0];
     assert.equal(row.status, 'Requested');
     assert.ok(row.reserved_until);
+    assert.equal(row.duration_minutes, 60);
+    assert.equal(Number(row.amount), 150);
+    assert.match(row.notes, /Service: Custom App/);
+    const publicSlots = (await request('availability')).body;
+    assert.equal(publicSlots.booked_slots.length, 1);
+    assert.equal(publicSlots.booked_slots[0].is_booked, true);
+    assert.equal(JSON.stringify(publicSlots).includes('Client'), false);
 });
 test('consultation editor updates details, quote and schedule and queues email', async () => {
     const result = await request('consultation-admin', 'PUT', {

@@ -96,7 +96,7 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
         refresh().catch((error) => notify(error.message));
         const interval = setInterval(
             () => refresh().catch((error) => notify(error.message)),
-            60000,
+            15000,
         );
         return () => clearInterval(interval);
     }, [user?.id]);
