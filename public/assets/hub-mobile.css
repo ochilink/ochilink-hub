@@ -153,6 +153,26 @@
     }
     .mobile-table td[data-label]::before { content: attr(data-label); flex: 0 0 100%; font-weight: 700; opacity: .65; font-size: 12px; }
     .mobile-table td > :is(div, span, a, details) { min-width: 0; max-width: 100%; }
+    .mobile-user-actions {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        min-width: 0;
+        gap: var(--space-1);
+    }
+    body[data-hub-page='admin'] .mobile-user-actions > select {
+        display: block;
+        width: 100%;
+        height: 48px;
+        min-height: 48px;
+        flex: 0 0 auto;
+        padding: var(--space-1) var(--space-2);
+        font-size: 16px;
+        line-height: 24px;
+        box-sizing: border-box;
+    }
+    .mobile-user-actions > button { flex: 0 0 auto; min-height: 48px; }
     .mobile-table td pre { white-space: pre-wrap; }
     .mobile-table td[colspan] { justify-content: center; }
     .mobile-table td[colspan]::before { display: none; }

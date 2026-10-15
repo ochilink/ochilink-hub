@@ -2,6 +2,8 @@
 
 ## 2026-10-15
 
+- Fixed the mobile Users Actions area: full-width stacked role selector and Unlock button, with a 48px role selector to prevent clipped text.
+
 - Removed the EST. OCHO RIOS navbar badge from the landing and booking pages.
 
 - Applied shared mobile container/card/type/spacing rules to landing, booking, admin and authentication; changed phone tables to labeled record cards, stacked availability dates, wrapped session/navigation controls, and fixed long audit text and chart sizing. Added mobile record regression coverage and standards/QA documentation.
