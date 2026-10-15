@@ -19,6 +19,8 @@
 
 ## Complete Hub sections (pending activation)
 
+- Separated the MFA setup secret and authenticator link onto distinct lines with explicit spacing.
+
 - Wired consent-based visitor analytics to the original Analytics tabs; added DNT/GPC suppression and retention.
 - Added hashed/single-use password recovery with encrypted transactional email and session revocation.
 - Added encrypted TOTP MFA enrollment, verification, replay prevention, one-use recovery codes and safe disable.

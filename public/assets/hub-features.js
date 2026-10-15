@@ -196,7 +196,9 @@ window.HubFeatureUI = function HubFeatureUI({
                                           'code',
                                           {
                                               style: {
+                                                  display: 'block',
                                                   overflowWrap: 'anywhere',
+                                                  marginBottom: '12px',
                                               },
                                           },
                                           secret.secret,
@@ -205,6 +207,10 @@ window.HubFeatureUI = function HubFeatureUI({
                                           'a',
                                           {
                                               href: secret.uri,
+                                              style: {
+                                                  display: 'block',
+                                                  marginTop: '12px',
+                                              },
                                               className:
                                                   'block underline mono text-[11px]',
                                           },
