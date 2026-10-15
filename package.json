@@ -1,11 +1,12 @@
 {
   "name": "ochilink-fullstack",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "type": "module",
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "stripe": "^23.0.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.10",

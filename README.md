@@ -23,7 +23,9 @@ See docs/NEON_SETUP.md for the database, first administrator, environment variab
 - User role and account unlock controls, with audit records and role-change session revocation.
 - Real user, consultation, audit and error record lists. Empty databases show empty states.
 
-No demo credentials or simulated dashboard statistics are used. Fitness APIs are disabled for this phase. Public account registration, password reset/email delivery, MFA enrollment, payments and calendar availability integration are not implemented in this change.
+See docs/FEATURE_ACTIVATION.md for the additional sections, migration 003, private service credentials and acceptance checks.
+
+No demo credentials or simulated dashboard statistics are used. Fitness APIs are disabled for this phase. Public account registration is not implemented. Recovery/email, authenticator MFA, payments, availability and consultation editing are implemented in the complete-sections branch and require the service setup in docs/FEATURE_ACTIVATION.md.
 
 ## Endpoints
 
@@ -39,3 +41,7 @@ No demo credentials or simulated dashboard statistics are used. Fitness APIs are
 - PUT /api/hub?resource=consultations (admin only)
 
 Mutations require same-origin HTTPS requests with JSON. Secrets remain in Vercel; they must never be embedded in public HTML.
+
+## Additional section endpoints
+
+The /api/hub resource parameter also supports recovery, reset-password, mfa, availability, availability-admin, analytics, analytics-admin, consultation-admin, payment-link, payment-details, checkout and email-outbox. Authentication/origin requirements are enforced per action. Stripe events use /api/stripe-webhook; authenticated maintenance uses /api/maintenance. See FEATURE_ACTIVATION.md before activating services.
