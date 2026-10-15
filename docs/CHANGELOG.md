@@ -12,3 +12,7 @@
 - Added a repeatable import of existing non-fitness catalog entries and a hidden-password first-admin SQL helper.
 - Disabled out-of-scope fitness/tracking sample endpoints, fixed API routing, removed unsafe demo fallbacks and raw error responses, and enabled verified remote database TLS.
 - Added 14 passing database/React DOM integration tests. Live deployment and browser visual checks remain pending.
+
+- Restored the original login/admin markup and unchanged original stylesheet after user feedback. Kept the original two-column login, sidebar/navigation, dashboard cards, tables, themes and app modal, connecting their controls through a data-only React hook.
+- Removed the replacement admin stylesheet. Added server-backed role/unlock controls and real seven-day audit counts/totals for the existing dashboard. Disabled unsupported demo-only features instead of claiming they are active.
+- Added regression checks for the original stylesheet/layout and the restored user controls.

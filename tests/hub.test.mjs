@@ -87,6 +87,24 @@ test('customer cannot access admin even with a valid database session', async ()
     await pool.query("INSERT INTO hub_sessions(token_hash,user_id,expires_at) VALUES ($1,$2,now()+interval '15 minutes')", [createHash('sha256').update(token).digest('hex'), id]);
     assert.equal((await request('admin', 'GET', {}, 'ochi_session=' + token)).status, 403);
 });
+test('original dashboard receives seven real audit days and database totals', async () => {
+    const result = await request('admin', 'GET', {}, adminCookie);
+    assert.equal(result.status, 200);
+    assert.equal(result.body.activity.length, 7);
+    assert.equal(result.body.activity.reduce((sum, day) => sum + day.events, 0), (await pool.query('SELECT count(*)::int AS count FROM security_auth_logs')).rows[0].count);
+    assert.equal(result.body.totals.users, 2);
+});
+test('user controls persist roles, revoke changed-user sessions and audit unlocks', async () => {
+    const id = (await pool.query("SELECT id FROM users WHERE email='reader@example.test'")).rows[0].id;
+    assert.equal((await request('users', 'PUT', { id, action: 'role', role: 'staff' }, adminCookie)).status, 200);
+    assert.equal((await pool.query('SELECT role FROM users WHERE id=$1', [id])).rows[0].role, 'staff');
+    assert.equal((await pool.query('SELECT count(*)::int AS count FROM hub_sessions WHERE user_id=$1', [id])).rows[0].count, 0);
+    await pool.query("UPDATE users SET failed_attempts=5,locked_until=now()+interval '15 minutes' WHERE id=$1", [id]);
+    assert.equal((await request('users', 'PUT', { id, action: 'unlock' }, adminCookie)).status, 200);
+    assert.equal((await pool.query('SELECT locked_until FROM users WHERE id=$1', [id])).rows[0].locked_until, null);
+    assert.equal((await request('users', 'PUT', { id: adminId, action: 'role', role: 'customer' }, adminCookie)).status, 400);
+    assert.equal((await request('users', 'PUT', { id, action: 'role', role: 'owner' }, adminCookie)).status, 400);
+});
 test('server rejects expired sessions and logout revokes sessions', async () => {
     await pool.query("UPDATE hub_sessions SET expires_at=now()-interval '1 minute' WHERE user_id=$1", [adminId]);
     assert.equal((await request('admin', 'GET', {}, adminCookie)).status, 401);

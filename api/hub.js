@@ -141,15 +141,23 @@ return async function handler(req, res) {
         }
         if (user.role !== 'admin') fail(403, 'Administrator access required.');
         if (resource === 'admin' && req.method === 'GET') {
-            const [apps, users, logs, errors, consultations, settings] = await Promise.all([
+            const [apps, users, logs, errors, consultations, settings, activity, totals] = await Promise.all([
                 pool.query('SELECT * FROM apps ORDER BY sort_order,name'),
                 pool.query('SELECT id,email,name,role,is_active,failed_attempts,locked_until,created_at FROM users ORDER BY created_at DESC LIMIT 200'),
                 pool.query('SELECT * FROM security_auth_logs ORDER BY timestamp DESC LIMIT 100'),
                 pool.query('SELECT * FROM system_error_logs ORDER BY created_at DESC LIMIT 100'),
                 pool.query('SELECT * FROM consultations ORDER BY created_at DESC LIMIT 100'),
-                pool.query("SELECT value FROM site_settings WHERE key='consultation_pricing'")
+                pool.query("SELECT value FROM site_settings WHERE key='consultation_pricing'"),
+                pool.query(`SELECT day::date::text AS day, count(l.log_id)::int AS events
+                    FROM generate_series(current_date-6,current_date,interval '1 day') AS day
+                    LEFT JOIN security_auth_logs l ON l.timestamp>=day AND l.timestamp<day+interval '1 day'
+                    GROUP BY day ORDER BY day`),
+                pool.query(`SELECT (SELECT count(*)::int FROM users) AS users,
+                    (SELECT count(*)::int FROM consultations) AS consultations,
+                    (SELECT coalesce(sum(amount),0) FROM consultations WHERE payment_status='Paid') AS paid_revenue,
+                    (SELECT count(*)::int FROM security_auth_logs WHERE event_type='LOGIN_FAILED' AND timestamp>=now()-interval '24 hours') AS failed_logins`)
             ]);
-            return res.json({ apps: apps.rows, users: users.rows, logs: logs.rows, errors: errors.rows, consultations: consultations.rows, pricing: settings.rows[0]?.value });
+            return res.json({ apps: apps.rows, users: users.rows, logs: logs.rows, errors: errors.rows, consultations: consultations.rows, pricing: settings.rows[0]?.value, activity: activity.rows, totals: totals.rows[0] });
         }
         if (resource === 'apps' && ['POST', 'PUT', 'DELETE'].includes(req.method)) {
             const result = await transaction(pool, async client => {
@@ -170,6 +178,29 @@ return async function handler(req, res) {
                 return { app: result.rows[0] };
             });
             return res.json(result);
+        }
+        if (resource === 'users' && req.method === 'PUT') {
+            if (!['role','unlock'].includes(body.action)) fail(400, 'Invalid user action.');
+            if (body.action === 'role' && !['admin','staff','vendor','customer'].includes(body.role)) fail(400, 'Invalid role.');
+            if (body.action === 'role' && body.id === user.id) fail(400, 'You cannot change your own administrator role.');
+            await transaction(pool, async client => {
+                await client.query('LOCK TABLE users IN SHARE ROW EXCLUSIVE MODE');
+                const target = (await client.query('SELECT id,role,is_active FROM users WHERE id=$1 FOR UPDATE', [body.id])).rows[0];
+                if (!target) fail(404, 'User not found.');
+                if (body.action === 'role') {
+                    if (target.role === 'admin' && target.is_active && body.role !== 'admin') {
+                        const count = (await client.query("SELECT count(*)::int AS count FROM users WHERE role='admin' AND is_active")).rows[0].count;
+                        if (count <= 1) fail(400, 'Keep at least one active administrator.');
+                    }
+                    await client.query('UPDATE users SET role=$1,updated_at=now() WHERE id=$2', [body.role,body.id]);
+                    await client.query('DELETE FROM hub_sessions WHERE user_id=$1', [body.id]);
+                    await audit(client, user.id, 'ROLE_CHANGED', { user_id: body.id, role: body.role });
+                } else {
+                    await client.query('UPDATE users SET failed_attempts=0,locked_until=NULL,updated_at=now() WHERE id=$1', [body.id]);
+                    await audit(client, user.id, 'ACCOUNT_UNLOCKED', { user_id: body.id });
+                }
+            });
+            return res.json({ ok: true });
         }
         if (resource === 'consultations' && req.method === 'PUT') {
             if (!['Requested','Scheduled','Completed','Cancelled'].includes(body.status)) fail(400, 'Invalid consultation status.');

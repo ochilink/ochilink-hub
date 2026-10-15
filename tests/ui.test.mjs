@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { JSDOM } from 'jsdom';
+import { createHash } from 'node:crypto';
 async function waitFor(fn) {
     for (let i = 0; i < 100; i++) { if (fn()) return; await new Promise(resolve => setTimeout(resolve, 20)); }
     assert.fail('UI did not reach expected state');
@@ -56,13 +57,32 @@ test('admin login renders without demo credentials and loads persisted apps afte
     try {
         const { document } = dom.window;
         await waitFor(() => document.querySelector('input[name=email]'));
-        assert.doesNotMatch(document.body.textContent, /demo|MFA|99\.97/);
-        document.querySelector('input[name=email]').value = 'owner@example.test';
-        document.querySelector('input[name=password]').value = 'private-password';
+        assert.doesNotMatch(document.getElementById('root').textContent, /demo|MFA|99\.97/);
+        assert.match(document.getElementById('root').textContent, /Caribbean/);
+        assert.ok(document.querySelector('.grid.md\\:grid-cols-\\[1\\.1fr_0\\.9fr\\]') || document.querySelector('[class*="md:grid-cols-"]'));
+        const setValue = (selector, value) => {
+            const input = document.querySelector(selector);
+            Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype, 'value').set.call(input, value);
+            input.dispatchEvent(new dom.window.Event('input', { bubbles: true }));
+        };
+        setValue('input[name=email]', 'owner@example.test');
+        setValue('input[name=password]', 'private-password');
         document.querySelector('form').dispatchEvent(new dom.window.Event('submit', { bubbles: true, cancelable: true }));
-        await waitFor(() => document.body.textContent.includes('Persisted app'));
-        [...document.querySelectorAll('button')].find(el => el.textContent === 'Add app').click();
-        await waitFor(() => document.body.textContent.includes('New app'));
+        await waitFor(() => document.querySelector('aside'));
+        const navApps = [...document.querySelectorAll('aside nav button')].find(el => el.textContent.includes('Apps'));
+        navApps.click();
+        await waitFor(() => document.getElementById('root').textContent.includes('Persisted app'));
+        [...document.querySelectorAll('button')].find(el => el.textContent === '+ New App').click();
+        await waitFor(() => document.getElementById('root').textContent.includes('ADD NEW APP'));
+        assert.ok(document.querySelector('aside'));
+        assert.match(document.getElementById('root').textContent, /Security Logs/);
         assert.match(document.body.textContent, /Publish on website/);
     } finally { dom.window.close(); }
+});
+
+test('restored admin retains the original complete stylesheet', async () => {
+    const html = await readFile('public/admin/index.html', 'utf8');
+    const style = html.match(/<style>([\s\S]*?)<\/style>/)[1];
+    assert.equal(createHash('sha256').update(style).digest('hex'), '129152ca569367890e8dfe389ba059ec65b118b816728794a89f2737447b461e');
+    assert.ok(!html.includes('hub-admin.css'));
 });

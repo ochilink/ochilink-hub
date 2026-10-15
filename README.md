@@ -19,6 +19,8 @@ See docs/NEON_SETUP.md for the database, first administrator, environment variab
 - Shared login/request throttling, account lockout and server-side admin authorization.
 - App create/edit/publish/delete and pricing changes with transactional audit logs.
 - Consultation requests stored in PostgreSQL; administrator can review client details.
+- Original login and admin layouts/styles retained; original controls are wired to server actions.
+- User role and account unlock controls, with audit records and role-change session revocation.
 - Real user, consultation, audit and error record lists. Empty databases show empty states.
 
 No demo credentials or simulated dashboard statistics are used. Fitness APIs are disabled for this phase. Public account registration, password reset/email delivery, MFA enrollment, payments and calendar availability integration are not implemented in this change.
