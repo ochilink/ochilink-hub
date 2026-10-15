@@ -2,6 +2,8 @@
 
 ## 2026-10-15
 
+- Fixed silent booking submission: the payment button now explains missing/unavailable slots and required fields, shows persistent checkout errors and a loading state, and retains a readable 48px minimum height. Unavailable slots still cannot be booked.
+
 - Restored the Analytics click heatmap to its 12-column/8-row spatial grid on phones, exempting it from mobile flex layout rules. Analytics tabs remain in a compact wrapping row.
 
 - Fixed the mobile Users Actions area: full-width stacked role selector and Unlock button, with a 48px role selector to prevent clipped text.
