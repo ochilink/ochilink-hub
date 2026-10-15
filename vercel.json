@@ -1,0 +1,22 @@
+
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/**/*.js", "use": "@vercel/node" },
+    { "src": "public/**", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/api/health", "dest": "/api/health.js" },
+    { "src": "/api/exercises", "dest": "/api/exercises.js" },
+    { "src": "/api/workouts", "dest": "/api/workouts.js" },
+    { "src": "/api/measurements", "dest": "/api/measurements.js" },
+    { "src": "/api/prs", "dest": "/api/prs.js" },
+    { "src": "/api/track", "dest": "/api/track.js" },
+    { "src": "/api/auth/login", "dest": "/api/auth-login.js" },
+    { "src": "/admin", "dest": "/public/admin/index.html" },
+    { "src": "/(.*)", "dest": "/public/$1" }
+  ],
+  "env": {
+    "JWT_SECRET": "@jwt-secret"
+  }
+}
