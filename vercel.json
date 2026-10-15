@@ -16,7 +16,4 @@
     { "src": "/admin", "dest": "/public/admin/index.html" },
     { "src": "/(.*)", "dest": "/public/$1" }
   ],
-  "env": {
-    "JWT_SECRET": "@jwt-secret"
-  }
-}
+ 
