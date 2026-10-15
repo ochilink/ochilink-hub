@@ -2,6 +2,8 @@
 
 ## 2026-10-15
 
+- Removed the EST. OCHO RIOS navbar badge from the landing and booking pages.
+
 - Applied shared mobile container/card/type/spacing rules to landing, booking, admin and authentication; changed phone tables to labeled record cards, stacked availability dates, wrapped session/navigation controls, and fixed long audit text and chart sizing. Added mobile record regression coverage and standards/QA documentation.
 
 - Added direct paid booking: server-priced Stripe Checkout, persistent retry tokens, 35-minute Checkout expiry, verified payment confirmation, deduplicated client/admin email, delayed-payment holds and missed-webhook reconciliation. Added migration 004 and Preview activation instructions in DIRECT_BOOKING.md. Existing inquiry/admin payment links remain available.
