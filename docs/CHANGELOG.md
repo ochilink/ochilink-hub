@@ -19,6 +19,8 @@
 
 ## Complete Hub sections (pending activation)
 
+- Matched the navbar Login button to the supplied reference, placed after Schedule, and removed the navbar email.
+
 - Added Admin Login links to desktop and mobile landing-page navigation.
 
 - Separated the MFA setup secret and authenticator link onto distinct lines with explicit spacing.
