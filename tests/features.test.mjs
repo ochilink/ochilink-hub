@@ -86,7 +86,8 @@ before(async () => {
     for (const file of [
         '001_ochilink_hub.sql',
         '003_complete_hub.sql',
-        '003_complete_hub.sql',
+        '004_direct_booking.sql',
+        '004_direct_booking.sql',
     ])
         await db.exec(await readFile('database/migrations/' + file, 'utf8'));
     adminId = (
@@ -150,8 +151,8 @@ test('availability publishes real slots and refuses overlapping slots', async ()
         400,
     );
 });
-test('booking a slot reserves it and a second request cannot double-book', async () => {
-    const tooLong = await request('consultations', 'POST', {client_name:'Client',client_email:'client@example.test',slot_id:slotId,duration_minutes:180,booking:true}, '');
+test('legacy request for a slot reserves it and a second request cannot double-book', async () => {
+    const tooLong = await request('consultations', 'POST', {client_name:'Client',client_email:'client@example.test',slot_id:slotId,duration_minutes:180,booking:false}, '');
     assert.equal(tooLong.status, 409);
     assert.equal((await pool.query('SELECT id FROM consultations')).rows.length, 0);
     const body = {
@@ -161,7 +162,7 @@ test('booking a slot reserves it and a second request cannot double-book', async
         phone: '+15555550100',
         service: 'Custom App',
         duration_minutes: 60,
-        booking: true,
+        booking: false,
         slot_id: slotId,
     };
     assert.equal(

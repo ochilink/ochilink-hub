@@ -343,6 +343,8 @@ test('booking renders live slots, real booked state, pricing and landing navbar'
         await waitFor(() => d.body.textContent.includes('10:00 AM EDT'));
         assert.equal(d.querySelector('a[href="/admin/"]').textContent, 'Login →');
         assert.match(d.body.textContent, /\$190/);
+        assert.match(d.body.textContent, /Continue to Payment/);
+        assert.doesNotMatch(d.body.textContent, /No charge now|Payment arranged separately/);
         assert.doesNotMatch(d.body.textContent, /in-memory|No backend|coming soon|Calendar synced/);
         const booked = [...d.querySelectorAll('button')].find(b => b.textContent.includes('Booked'));
         assert.equal(booked.disabled, true);

@@ -1,5 +1,6 @@
 window.useOchilinkBooking = function (React) {
     const [state, setState] = React.useState({ slots: [], pricing: null, loading: true, error: '' });
+    const token = React.useRef(sessionStorage.getItem('ochilink-booking-token') || '');
     const [busy, setBusy] = React.useState(false);
     const date = value => new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(value));
     const time = value => new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }).format(new Date(value));
@@ -18,6 +19,8 @@ window.useOchilinkBooking = function (React) {
         }
     }
     React.useEffect(() => {
+        const payment = new URLSearchParams(window.location.search).get('payment');
+        if (payment === 'returned') sessionStorage.removeItem('ochilink-booking-token');
         refresh();
         const timer = setInterval(refresh, 15000);
         window.addEventListener('focus', refresh);
@@ -30,9 +33,16 @@ window.useOchilinkBooking = function (React) {
         async book(values, slotId) {
             setBusy(true);
             try {
-                await request('/api/consultations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_name: values.name, client_email: values.email, phone: values.phone, service: values.service, notes: values.notes, duration_minutes: Number(values.duration[0]) * 60, slot_id: slotId, booking: true }) });
-                await refresh();
-            } catch (error) { await refresh(); throw error; }
+                if (!token.current) {
+                    token.current = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join('');
+                    sessionStorage.setItem('ochilink-booking-token', token.current);
+                }
+                const result = await request('/api/consultations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ client_name: values.name, client_email: values.email, phone: values.phone, service: values.service, notes: values.notes, duration_minutes: Number(values.duration[0]) * 60, slot_id: slotId, booking: true, booking_token: token.current }) });
+                const target = new URL(result.checkout_url);
+                if (target.protocol !== 'https:' || target.hostname !== 'checkout.stripe.com') throw new Error('Unable to open secure checkout. Please try again.');
+                window.location.assign(target.href);
+                return result;
+            } catch (error) { if (/finished or expired|unavailable or expired|no outstanding/.test(error.message)) { token.current = ''; sessionStorage.removeItem('ochilink-booking-token'); } await refresh(); if (token.current) throw new Error(error.message + ' Reload this page to resume your checkout.'); throw error; }
             finally { setBusy(false); }
         },
     };
