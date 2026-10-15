@@ -2,6 +2,8 @@
 
 ## 2026-10-15
 
+- Restored the Analytics click heatmap to its 12-column/8-row spatial grid on phones, exempting it from mobile flex layout rules. Analytics tabs remain in a compact wrapping row.
+
 - Fixed the mobile Users Actions area: full-width stacked role selector and Unlock button, with a 48px role selector to prevent clipped text.
 
 - Removed the EST. OCHO RIOS navbar badge from the landing and booking pages.

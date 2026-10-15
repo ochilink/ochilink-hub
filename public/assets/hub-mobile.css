@@ -194,3 +194,28 @@
 @media (min-width: 768px) {
     .mobile-table-panel { min-width: 0; max-width: 100%; overflow-x: auto; }
 }
+
+/* A heatmap preserves spatial meaning: never convert its 96 cells to a list. */
+@media (max-width: 767px) {
+    body[data-hub-page='admin'] main .mobile-heatmap {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+        gap: 4px;
+        width: 100%;
+        min-width: 0;
+    }
+    body[data-hub-page='admin'] main .mobile-heatmap > div {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        min-height: 0;
+        padding: 0;
+        aspect-ratio: 1;
+    }
+    .mobile-analytics-tabs { flex-wrap: wrap; }
+    body[data-hub-page='admin'] main .mobile-analytics-tabs > button {
+        flex: 1 1 64px;
+        width: auto;
+    }
+    .mobile-analytics-tabs > div { flex: 1 1 100%; margin-left: 0; }
+}
