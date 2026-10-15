@@ -19,6 +19,8 @@
 
 ## Complete Hub sections (pending activation)
 
+- Added Admin Login links to desktop and mobile landing-page navigation.
+
 - Separated the MFA setup secret and authenticator link onto distinct lines with explicit spacing.
 
 - Wired consent-based visitor analytics to the original Analytics tabs; added DNT/GPC suppression and retention.
