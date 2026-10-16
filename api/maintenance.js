@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { getPool } from './_db.js';
+import { stripeReady, reconcileBookingPayments } from '../lib/payments.js';
 import { flushMail } from '../lib/mail.js';
 export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
@@ -16,6 +17,7 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).end();
     const pool = getPool();
     try {
+        if (stripeReady()) await reconcileBookingPayments(pool);
         const mail = await flushMail(pool, { limit: 5 });
         await pool.query('DELETE FROM hub_sessions WHERE expires_at<now()');
         await pool.query(
@@ -28,7 +30,7 @@ export default async function handler(req, res) {
             'UPDATE users SET mfa_pending_secret=NULL,mfa_pending_until=NULL WHERE mfa_pending_until<now()',
         );
         await pool.query(
-            "UPDATE consultations SET slot_id=NULL,scheduled_at=NULL,reserved_until=NULL WHERE status='Requested' AND reserved_until<now()",
+            "UPDATE consultations SET slot_id=NULL,scheduled_at=NULL,reserved_until=NULL WHERE status='Requested' AND NOT checkout_required AND reserved_until<now()",
         );
         await pool.query(
             "DELETE FROM hub_analytics WHERE created_at<now()-interval '90 days'",

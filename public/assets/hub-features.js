@@ -58,7 +58,7 @@ window.HubFeatureUI = function HubFeatureUI({
         h(
             'section',
             {
-                className: 'rounded-[16px] border p-5 space-y-4',
+                className: 'mobile-card rounded-[16px] border p-5 space-y-4',
                 style: panelStyle,
             },
             h('h2', { className: 'mono text-[11px] font-bold' }, title),
@@ -330,7 +330,7 @@ window.HubFeatureUI = function HubFeatureUI({
                 h(
                     'form',
                     {
-                        className: 'grid grid-cols-2 gap-3',
+                        className: 'mobile-availability-form grid grid-cols-2 gap-3',
                         onSubmit: (e) => {
                             e.preventDefault();
                             const form = e.currentTarget,
@@ -378,9 +378,9 @@ window.HubFeatureUI = function HubFeatureUI({
                             {
                                 key: slot.id,
                                 className:
-                                    'flex flex-wrap gap-3 items-center mono text-[11px]',
+                                    'mobile-availability-row flex flex-wrap gap-3 items-center mono text-[11px]',
                             },
-                            `${new Date(slot.starts_at).toLocaleString()} – ${new Date(slot.ends_at).toLocaleTimeString()} · ${slot.reserved_by ? "Reserved by " + slot.reserved_by : "Available"}`,
+                            h('span', null, `${new Date(slot.starts_at).toLocaleString()} – ${new Date(slot.ends_at).toLocaleTimeString()} · ${slot.reserved_by ? "Reserved by " + slot.reserved_by : "Available"}`),
                             button('Remove', () =>
                                 run(async () => {
                                     await api('availability-admin', 'DELETE', {

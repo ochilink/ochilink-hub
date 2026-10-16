@@ -343,6 +343,8 @@ test('booking renders live slots, real booked state, pricing and landing navbar'
         await waitFor(() => d.body.textContent.includes('10:00 AM EDT'));
         assert.equal(d.querySelector('a[href="/admin/"]').textContent, 'Login →');
         assert.match(d.body.textContent, /\$190/);
+        assert.match(d.body.textContent, /Continue to Payment/);
+        assert.doesNotMatch(d.body.textContent, /No charge now|Payment arranged separately/);
         assert.doesNotMatch(d.body.textContent, /in-memory|No backend|coming soon|Calendar synced/);
         const booked = [...d.querySelectorAll('button')].find(b => b.textContent.includes('Booked'));
         assert.equal(booked.disabled, true);
@@ -350,5 +352,36 @@ test('booking renders live slots, real booked state, pricing and landing navbar'
         three.click();
         await waitFor(() => d.body.textContent.includes('$285'));
         assert.equal(d.querySelector('header').textContent.includes('ramone@'), false);
+    } finally { dom.window.close(); }
+});
+
+test('mobile record cards retain labeled consultation and error fields after navigation', async () => {
+    const identifier = 'reference_' + 'x'.repeat(120);
+    const data = {
+        apps: [], users: [], logs: [], activity: [], totals: {},
+        pricing: { hourly: 75, minimum: 150 },
+        consultations: [{ id: 'booking', client_name: 'Mobile Client', client_email: 'client@example.test', scheduled_at: '2026-10-20T14:00:00Z', duration_minutes: 120, amount: 150, status: 'Scheduled', payment_status: 'Paid' }],
+        errors: [{ id: 'error', created_at: new Date().toISOString(), severity: 'ERROR', service: 'booking', message: identifier, path: '/api/consultations' }],
+    };
+    const dom = await page('public/admin/index.html', url => {
+        if (url.includes('session')) return result({ user: { id: 'admin', role: 'admin', email: 'owner@example.test' } });
+        if (url.includes('analytics-admin')) return result({ clicks: [], scroll: [], pages: [] });
+        if (url.includes('availability-admin')) return result({ slots: [] });
+        return result(data);
+    });
+    try {
+        const d = dom.window.document;
+        await waitFor(() => d.querySelector('aside nav'));
+        const go = name => [...d.querySelectorAll('aside nav button')].find(b => b.textContent.includes(name)).click();
+        go('Consultations');
+        await waitFor(() => d.querySelector('td[data-label="CLIENT"]'));
+        assert.match(d.querySelector('td[data-label="CLIENT"]').textContent, /Mobile Client.*client@example.test/);
+        assert.match(d.querySelector('td[data-label="AMOUNT"]').textContent, /150/);
+        assert.equal(d.querySelector('table').getAttribute('role'), 'table');
+        assert.ok(d.querySelector('.mobile-availability-form'));
+        go('Error Logs');
+        await waitFor(() => d.querySelector('td[data-label="MESSAGE"]'));
+        assert.equal(d.querySelector('td[data-label="MESSAGE"]').textContent, identifier);
+        assert.equal(d.querySelector('td[data-label="PATH"]').textContent, '/api/consultations');
     } finally { dom.window.close(); }
 });

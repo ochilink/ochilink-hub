@@ -66,6 +66,7 @@ before(async () => {
     await db.exec(
         await readFile('database/migrations/003_complete_hub.sql', 'utf8'),
     );
+    await db.exec(await readFile('database/migrations/004_direct_booking.sql', 'utf8'));
     await db.exec(
         await readFile(
             'database/migrations/002_import_public_catalog.sql',

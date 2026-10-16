@@ -1,6 +1,7 @@
 import { featureRequest, capabilities } from '../lib/features.js';
 import { useMfa, encryptionReady } from '../lib/security.js';
 import { queueMail, flushMail } from '../lib/mail.js';
+import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
 import { createHash, randomBytes, createHmac } from 'node:crypto';
 import bcrypt from 'bcryptjs';
@@ -218,7 +219,7 @@ async function login(pool, req, res, body) {
         },
     };
 }
-export function createHandler(poolProvider = getPool) {
+export function createHandler(poolProvider = getPool, stripeProvider = stripeClient) {
     return async function handler(req, res) {
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -284,6 +285,8 @@ export function createHandler(poolProvider = getPool) {
                 let notes = text(body.notes ?? '', 3000, false);
                 const duration = body.duration_minutes == null ? null : Number(body.duration_minutes);
                 if (duration !== null && ![60,120,180].includes(duration)) fail(400, 'Choose 1, 2 or 3 hours.');
+                if (body.booking && (!stripeReady() || !encryptionReady())) fail(503, 'Online booking payments are not configured yet.');
+                if (body.booking && !/^[a-f0-9]{64}$/.test(body.booking_token || '')) fail(400, 'Reload the booking page and try again.');
                 if (body.booking && !body.slot_id) fail(400, 'Choose an available appointment slot.');
                 if (body.service !== undefined) {
                     if (!['Website Audit','Real Estate Tech','Custom App','CRM Setup','General'].includes(body.service)) fail(400, 'Choose a valid service.');
@@ -297,18 +300,26 @@ export function createHandler(poolProvider = getPool) {
                     .split(',')[0]
                     .trim();
                 await throttle(pool, `consultation:${ip}`, 5);
+                const bookingToken = body.booking ? body.booking_token : null;
                 await transaction(pool, async (client) => {
+                    // Serialize retries before checking the token or reserving a slot.
+                    await client.query('LOCK TABLE hub_availability IN SHARE ROW EXCLUSIVE MODE');
+                    if (bookingToken) {
+                        const previous = (await client.query('SELECT id FROM consultations WHERE manage_token_hash=$1 AND checkout_required', [hash(bookingToken)])).rows[0];
+                        if (previous) return;
+                    }
                     let slot = null;
                     if (body.slot_id)
                         slot = await reserveSlot(client, body.slot_id);
+                    if (bookingToken && new Date(slot.starts_at).getTime() < Date.now() + 35*60000) fail(409, 'Choose a time at least 35 minutes from now to allow checkout to finish.');
                     if (duration && (!slot || duration * 60000 > new Date(slot.ends_at)-new Date(slot.starts_at))) fail(409, 'Choose a slot long enough for this duration.');
                     const minutes = duration || (slot ? Math.round((new Date(slot.ends_at)-new Date(slot.starts_at))/60000) : 120);
                     const pricing = (await client.query("SELECT value FROM site_settings WHERE key='consultation_pricing'")).rows[0]?.value;
                     const quote = pricing ? Math.round(Math.max(Number(pricing.minimum), Number(pricing.hourly)*minutes/60)*100)/100 : null;
                     if (body.booking && (!Number.isFinite(quote) || quote === null || quote <= 0)) fail(503, 'Booking pricing is temporarily unavailable.');
                     const result = await client.query(
-                        `INSERT INTO consultations(client_name,client_email,notes,slot_id,scheduled_at,duration_minutes,amount,reserved_until)
-                    VALUES ($1,$2,$3,$4,$5,$6,$7,CASE WHEN $4::uuid IS NOT NULL THEN now()+interval '30 minutes' ELSE NULL END) RETURNING id`,
+                        `INSERT INTO consultations(client_name,client_email,notes,slot_id,scheduled_at,duration_minutes,amount,reserved_until,checkout_required,manage_token_hash,manage_token_until)
+                    VALUES ($1,$2,$3,$4,$5,$6,$7,CASE WHEN $4::uuid IS NOT NULL THEN now()+CASE WHEN $8 THEN interval '35 minutes' ELSE interval '30 minutes' END ELSE NULL END,$8,$9,CASE WHEN $8 THEN now()+interval '1 day' ELSE NULL END) RETURNING id`,
                         [
                             clientName,
                             email,
@@ -317,12 +328,17 @@ export function createHandler(poolProvider = getPool) {
                             slot?.starts_at || null,
                             minutes,
                             quote,
+                            !!bookingToken,
+                            bookingToken ? hash(bookingToken) : null,
                         ],
                     );
                     await audit(client, null, 'CONSULTATION_REQUESTED', {
                         consultation_id: result.rows[0].id,
                     });
-                    if (encryptionReady()) {
+                    if (bookingToken) {
+                        await prepareCheckout(client, bookingToken);
+                    }
+                    if (!bookingToken && encryptionReady()) {
                         await queueMail(
                             client,
                             'consultation-request',
@@ -342,6 +358,12 @@ export function createHandler(poolProvider = getPool) {
                             );
                     }
                 });
+                if (bookingToken) {
+                    // Commit the hold/payment before Stripe: a timeout or lost response
+                    // can then be retried with the same token and Stripe idempotency key.
+                    const result = await transaction(pool, client => checkout(client, bookingToken, stripeProvider()));
+                    return res.status(201).json({ ok: true, checkout_url: result.url });
+                }
                 await flushMail(pool, { limit: 3 });
                 return res.status(201).json({ ok: true });
             }

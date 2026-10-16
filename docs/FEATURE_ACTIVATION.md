@@ -2,6 +2,8 @@
 
 This branch implements the seven requested sections using the original login/admin stylesheet and layout. It adds controls within those sections. It does not replace the original sidebar, cards, tables, themes or app modal.
 
+For direct payment on /booking, also follow [DIRECT_BOOKING.md](DIRECT_BOOKING.md), including migration 004 before deploying the new booking code. The request/approval description below applies to the legacy inquiry workflow.
+
 ## Rollout order
 
 1. Run database/migrations/003_complete_hub.sql in the same Neon database. The migration is transactional/repeatable, adds tables/columns/indexes and preserves existing accounts and records. Existing previews can continue using the expanded schema.

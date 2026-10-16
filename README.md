@@ -45,3 +45,5 @@ Mutations require same-origin HTTPS requests with JSON. Secrets remain in Vercel
 ## Additional section endpoints
 
 The /api/hub resource parameter also supports recovery, reset-password, mfa, availability, availability-admin, analytics, analytics-admin, consultation-admin, payment-link, payment-details, checkout and email-outbox. Authentication/origin requirements are enforced per action. Stripe events use /api/stripe-webhook; authenticated maintenance uses /api/maintenance. See FEATURE_ACTIVATION.md before activating services.
+
+Direct paid booking rollout: see [docs/DIRECT_BOOKING.md](docs/DIRECT_BOOKING.md). Apply migration 004 before deploying this version.

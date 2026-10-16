@@ -2,6 +2,18 @@
 
 ## 2026-10-15
 
+- Fixed silent booking submission: the payment button now explains missing/unavailable slots and required fields, shows persistent checkout errors and a loading state, and retains a readable 48px minimum height. Unavailable slots still cannot be booked.
+
+- Restored the Analytics click heatmap to its 12-column/8-row spatial grid on phones, exempting it from mobile flex layout rules. Analytics tabs remain in a compact wrapping row.
+
+- Fixed the mobile Users Actions area: full-width stacked role selector and Unlock button, with a 48px role selector to prevent clipped text.
+
+- Removed the EST. OCHO RIOS navbar badge from the landing and booking pages.
+
+- Applied shared mobile container/card/type/spacing rules to landing, booking, admin and authentication; changed phone tables to labeled record cards, stacked availability dates, wrapped session/navigation controls, and fixed long audit text and chart sizing. Added mobile record regression coverage and standards/QA documentation.
+
+- Added direct paid booking: server-priced Stripe Checkout, persistent retry tokens, 35-minute Checkout expiry, verified payment confirmation, deduplicated client/admin email, delayed-payment holds and missed-webhook reconciliation. Added migration 004 and Preview activation instructions in DIRECT_BOOKING.md. Existing inquiry/admin payment links remain available.
+
 - Added the initial Ochilink Hub PostgreSQL migration for users, app catalog, consultations, pricing/settings, audit/error logs, sessions and shared rate-limit counters.
 - Added Neon setup and verification instructions. No demo accounts, fitness tables or destructive statements are included.
 - Website/API integration and execution against Neon remain pending.
