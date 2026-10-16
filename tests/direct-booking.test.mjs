@@ -6,6 +6,7 @@ import { createHandler } from '../api/hub.js';
 import { processPaymentEvent, reconcileBookingPayments } from '../lib/payments.js';
 import { availableSlots } from '../lib/scheduling.js';
 import { unseal } from '../lib/security.js';
+import { flushMail } from '../lib/mail.js';
 const db = new PGlite();
 const pool = { query: (sql, values) => db.query(sql, values), async connect() { return { query: pool.query, release() {} }; } };
 let slot, calls = 0, params, idempotency, failOnce = false;
@@ -108,4 +109,51 @@ test('expired and failed checkouts release slots; missed expiry webhook is recon
     sessions.set('cs_missed',{id:'cs_missed',status:'expired',payment_status:'unpaid'});
     await reconcileBookingPayments(pool,stripe);
     assert.equal((await pool.query('SELECT status FROM consultations WHERE id=$1',[id])).rows[0].status,'Cancelled');
+});
+
+test('email provider failure after payment commit preserves paid state and retries without duplicate confirmation', async () => {
+    const payment = (await pool.query("SELECT id,consultation_id FROM hub_payments WHERE state='paid' ORDER BY created_at LIMIT 1")).rows[0];
+    assert.ok(payment);
+    const initial = (await pool.query("SELECT count(*)::int AS count FROM hub_email_outbox WHERE kind='payment'")).rows[0].count;
+    assert.equal(initial, 1);
+    const previous = { key: process.env.RESEND_API_KEY, from: process.env.MAIL_FROM };
+    process.env.RESEND_API_KEY = 're_test_mock_only';
+    process.env.MAIL_FROM = 'noreply@example.test';
+    try {
+        const failure = await flushMail(pool, {
+            limit: 1,
+            fetcher: async () => ({ ok: false, status: 503 }),
+        });
+        assert.equal(failure.sent, 0);
+        const queued = (await pool.query("SELECT state,attempts FROM hub_email_outbox WHERE kind='payment'")).rows[0];
+        assert.equal(queued.state, 'pending');
+        assert.equal(queued.attempts, 1);
+        const paidBefore = (await pool.query('SELECT state FROM hub_payments WHERE id=$1', [payment.id])).rows[0];
+        assert.equal(paidBefore.state, 'paid');
+
+        const paidSession = {
+            id: [...sessions.values()][0].id,
+            payment_status: 'paid',
+            payment_intent: 'pi_test_booking',
+        };
+        await event('checkout.session.completed', paidSession, 'evt_paid_duplicate_type');
+        assert.equal((await pool.query("SELECT count(*)::int AS count FROM hub_email_outbox WHERE kind='payment'")).rows[0].count, initial);
+
+        await pool.query("UPDATE hub_email_outbox SET available_at=now()-interval '1 minute' WHERE kind='payment'");
+        const success = await flushMail(pool, {
+            limit: 1,
+            fetcher: async () => ({ ok: true, async json() { return { id: 'email_mock_delivered' }; } }),
+        });
+        assert.equal(success.sent, 1);
+        const delivered = (await pool.query("SELECT state,provider_id FROM hub_email_outbox WHERE kind='payment'")).rows[0];
+        assert.equal(delivered.state, 'sent');
+        assert.equal(delivered.provider_id, 'email_mock_delivered');
+        assert.equal((await pool.query('SELECT state FROM hub_payments WHERE id=$1', [payment.id])).rows[0].state, 'paid');
+        assert.equal((await pool.query("SELECT count(*)::int AS count FROM hub_email_outbox WHERE kind='payment'")).rows[0].count, initial);
+    } finally {
+        for (const [name, value] of Object.entries({ RESEND_API_KEY: previous.key, MAIL_FROM: previous.from })) {
+            if (value === undefined) delete process.env[name];
+            else process.env[name] = value;
+        }
+    }
 });
