@@ -189,7 +189,7 @@ test('restored admin retains the original complete stylesheet', async () => {
     const html = await readFile('public/admin/index.html', 'utf8');
     const style = html.match(/<style>([\s\S]*?)<\/style>/)[1];
     assert.equal(
-        createHash('sha256').update(style).digest('hex'),
+        createHash('sha256').update(style.replace(/\r\n/g, '\n')).digest('hex'),
         '129152ca569367890e8dfe389ba059ec65b118b816728794a89f2737447b461e',
     );
     assert.ok(!html.includes('hub-admin.css'));
