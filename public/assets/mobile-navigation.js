@@ -4,7 +4,7 @@
   css.textContent = `
     @media(max-width:767px){
       .mobile-public-subnav{display:none!important}
-      .mobile-public-container{min-height:64px;height:64px!important;flex-wrap:nowrap!important}
+      .mobile-public-header > .mobile-public-container{min-height:64px;height:64px!important;flex-wrap:nowrap!important}
       .mobile-nav-actions>a,.mobile-nav-actions>button:not([aria-label^="Switch to"]):not(.ochi-mobile-toggle):not(.ochi-mobile-search){display:none!important}
       .ochi-mobile-search,.ochi-mobile-toggle{display:inline-flex!important;align-items:center;justify-content:center;width:40px;height:40px;border:1px solid rgba(148,163,184,.35);border-radius:12px;color:inherit;background:rgba(100,116,139,.1);cursor:pointer}
       .ochi-mobile-panel{position:absolute;top:100%;right:12px;left:12px;z-index:1000;padding:16px;background:#0B0F1A;color:white;border:1px solid #293549;border-radius:18px;box-shadow:0 18px 55px rgba(0,0,0,.45);display:grid;gap:9px;max-height:calc(100dvh - 90px);overflow-y:auto}
