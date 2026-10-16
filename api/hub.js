@@ -7,6 +7,15 @@ import { createHash, randomBytes, createHmac } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { getPool } from './_db.js';
 
+function clientIp(req) {
+    // Vercel supplies a proxy-controlled client IP; do not trust arbitrary
+    // forwarding chains when Vercel's request marker is present.
+    const headers = req.headers || {};
+    const value = headers['x-vercel-id']
+        ? headers['x-vercel-forwarded-for'] || headers['x-real-ip'] || 'unknown'
+        : headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+    return String(value).split(',')[0].trim() || 'unknown';
+}
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 class HttpError extends Error {
     constructor(status, message) {
@@ -147,13 +156,7 @@ async function login(pool, req, res, body) {
     const password = typeof body.password === 'string' ? body.password : '';
     if (!password || Buffer.byteLength(password, 'utf8') > 72)
         fail(400, 'Invalid email or password.');
-    const ip = String(
-        req.headers['x-forwarded-for'] ||
-            req.socket?.remoteAddress ||
-            'unknown',
-    )
-        .split(',')[0]
-        .trim();
+    const ip = clientIp(req);
     await throttle(pool, `ip:${ip}`, 30);
     await throttle(pool, `email:${email}`, 10);
     const user = (
@@ -292,13 +295,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     if (!['Website Audit','Real Estate Tech','Custom App','CRM Setup','General'].includes(body.service)) fail(400, 'Choose a valid service.');
                     notes = `Service: ${body.service}\nPhone: ${text(body.phone ?? '', 60, false)}\n${notes}`;
                 }
-                const ip = String(
-                    req.headers['x-forwarded-for'] ||
-                        req.socket?.remoteAddress ||
-                        'unknown',
-                )
-                    .split(',')[0]
-                    .trim();
+                const ip = clientIp(req);
                 await throttle(pool, `consultation:${ip}`, 5);
                 const bookingToken = body.booking ? body.booking_token : null;
                 await transaction(pool, async (client) => {
