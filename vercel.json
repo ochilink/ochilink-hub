@@ -2,20 +2,52 @@
 {
   "rewrites": [
     {
-      "source": "/booking",
-      "destination": "/Ochilink-Booking-Dynamic.html"
+      "source": "/api/auth/login",
+      "destination": "/api/auth-login"
     },
     {
       "source": "/admin",
       "destination": "/admin/index.html"
     },
     {
-      "source": "/admin/:path*",
-      "destination": "/admin/index.html"
-    },
+      "source": "/booking",
+      "destination": "/booking/index.html"
+    }
+  ],
+  "headers": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        }
+      ]
     }
-  ]
+  ],
+  "crons": [
+    {
+      "path": "/api/maintenance",
+      "schedule": "0 8 * * *"
+    }
+  ],
+  "functions": {
+    "api/hub.js": {
+      "maxDuration": 60
+    },
+    "api/maintenance.js": {
+      "maxDuration": 60
+    },
+    "api/stripe-webhook.js": {
+      "maxDuration": 60
+    }
+  }
 }
