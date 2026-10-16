@@ -407,7 +407,9 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     pool.query(
                         "SELECT value FROM site_settings WHERE key='consultation_pricing'",
                     ),
-                    pool.query(`SELECT day::date::text AS day, count(l.log_id)::int AS events
+                    pool.query(`SELECT day::date::text AS day, count(l.log_id)::int AS events,
+                    count(l.log_id) FILTER (WHERE l.event_type IN ('LOGIN_FAILED','MFA_FAILED'))::int AS failed_auth,
+                    count(l.log_id) FILTER (WHERE l.event_type='RATE_LIMITED')::int AS blocked
                     FROM generate_series(current_date-6,current_date,interval '1 day') AS day
                     LEFT JOIN security_auth_logs l ON l.timestamp>=day AND l.timestamp<day+interval '1 day'
                     GROUP BY day ORDER BY day`),

@@ -257,6 +257,23 @@ test('original dashboard receives seven real audit days and database totals', as
         ).rows[0].count,
     );
     assert.equal(result.body.totals.users, 2);
+    const expected = await pool.query(`
+        SELECT day::date::text AS day,
+            count(l.log_id) FILTER (WHERE l.event_type IN ('LOGIN_FAILED','MFA_FAILED'))::int AS failed_auth,
+            count(l.log_id) FILTER (WHERE l.event_type='RATE_LIMITED')::int AS blocked
+        FROM generate_series(current_date-6,current_date,interval '1 day') AS day
+        LEFT JOIN security_auth_logs l
+            ON l.timestamp>=day AND l.timestamp<day+interval '1 day'
+        GROUP BY day ORDER BY day
+    `);
+    assert.deepEqual(
+        result.body.activity.map(({day, failed_auth, blocked}) => ({day, failed_auth, blocked})),
+        expected.rows,
+    );
+    assert.ok(result.body.activity.every((day) =>
+        Number.isInteger(day.failed_auth) && day.failed_auth >= 0 &&
+        Number.isInteger(day.blocked) && day.blocked >= 0
+    ));
 });
 test('user controls persist roles, revoke changed-user sessions and audit unlocks', async () => {
     const id = (
