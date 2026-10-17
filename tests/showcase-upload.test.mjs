@@ -41,7 +41,7 @@ function database({ admin = true, app = true, failAudit = false } = {}) {
       queries.push({ sql, params });
       if (failAudit && sql.includes('INSERT INTO security_auth_logs'))
         throw new Error('audit unavailable');
-      return { rows: [] };
+      return { rows: [], rowCount: sql.includes('UPDATE showcase_upload_intents') ? 1 : 0 };
     },
     release() {},
   };
