@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { getPool } from './_db.js';
 import { storeShowcaseMedia, deleteShowcaseMedia } from '../lib/showcase-blob.js';
 import { MAX_MEDIA_BYTES, validateShowcaseMedia } from '../lib/showcase-media.js';
+import { createShowcaseIntent, setShowcaseIntentState } from '../lib/showcase-intents.js';
 
 const LIMIT = MAX_MEDIA_BYTES;
 const deny = (status, message) => { throw Object.assign(new Error(message), { status }); };
@@ -40,10 +41,20 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
       const filename = String(req.headers['x-media-filename'] || '');
       const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
       const bytes = await boundedBody(req);
-      validateShowcaseMedia({ bytes, filename, contentType });
+      const validated = validateShowcaseMedia({ bytes, filename, contentType });
       const { rows: apps } = await pool.query('SELECT id FROM apps WHERE id=$1', [appId]);
       if (!apps.length) deny(404, 'Application not found.');
-      const uploaded = await store({ bytes, filename, contentType });
+      const intentId = await createShowcaseIntent(pool, {
+        appId, actorId: users[0].id, objectKey: validated.objectKey,
+      });
+      let uploaded;
+      try {
+        uploaded = await store({ bytes, filename, contentType, objectKey: validated.objectKey });
+        if (uploaded.objectKey !== validated.objectKey) throw new Error('Uploaded object key mismatch.');
+      } catch (error) {
+        await setShowcaseIntentState(pool, intentId, 'cleanup_required', 'STORE_FAILED');
+        throw error;
+      }
       // The object is private and cannot be published without committed metadata.
       // A failed transaction can leave an orphan; cleanup reconciliation is required
       // before enabling this endpoint in a deployed environment.
@@ -64,12 +75,20 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
             kind: uploaded.kind, size: uploaded.byteLength, sha256: uploaded.sha256,
           })],
         );
+        await client.query(
+          `UPDATE showcase_upload_intents SET state='committed',updated_at=now()
+           WHERE intent_id=$1 AND state='pending'`, [intentId],
+        );
         await client.query('COMMIT');
       } catch (error) {
         if (client) {
           try { await client.query('ROLLBACK'); } catch { /* original failure takes priority */ }
         }
-        try { await remove(uploaded.objectKey); }
+        try {
+          await setShowcaseIntentState(pool, intentId, 'cleanup_required', 'DB_FAILED');
+          await remove(uploaded.objectKey);
+          await setShowcaseIntentState(pool, intentId, 'cleaned');
+        }
         catch (cleanupError) {
           console.error('Showcase orphan cleanup failed', {
             code: 'SHOWCASE_ORPHAN_CLEANUP_FAILED',
