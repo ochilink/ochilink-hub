@@ -99,8 +99,9 @@ test('media upload rejects foreign origin, invalid files and oversized request',
 
 test('media upload updates app metadata and audits after successful storage', async () => {
   const db = database();
-  const key = 'showcases/valid.html';
-  const handler = setup(db, async ({ bytes, contentType, filename }) => {
+  let key;
+  const handler = setup(db, async ({ bytes, contentType, filename, objectKey }) => {
+    key = objectKey;
     assert.equal(bytes.toString(), html.toString());
     assert.equal(contentType, 'text/html');
     assert.equal(filename, 'demo.html');
@@ -136,13 +137,14 @@ test('media upload rejects missing app and storage failure without updating meta
 
 test('media upload rolls back database transaction when audit insertion fails', async () => {
   const db = database({ failAudit: true });
-  const key = 'showcases/11111111-1111-4111-8111-111111111111.html';
+  let key;
   const removed = [];
   const handler = createShowcaseUploadHandler({
     poolProvider: () => db.pool,
-    store: async () => ({
-      objectKey: key, kind: 'html', byteLength: html.length, sha256: 'b'.repeat(64),
-    }),
+    store: async ({ objectKey }) => {
+      key = objectKey;
+      return { objectKey, kind: 'html', byteLength: html.length, sha256: 'b'.repeat(64) };
+    },
     remove: async (objectKey) => { removed.push(objectKey); },
   });
   const res = response();
@@ -155,12 +157,13 @@ test('media upload rolls back database transaction when audit insertion fails', 
 
 test('cleanup failure does not report upload success or commit failed metadata', async () => {
   const db = database({ failAudit: true });
-  const key = 'showcases/33333333-3333-4333-8333-333333333333.html';
+  let key;
   const handler = createShowcaseUploadHandler({
     poolProvider: () => db.pool,
-    store: async () => ({
-      objectKey: key, kind: 'html', byteLength: html.length, sha256: 'c'.repeat(64),
-    }),
+    store: async ({ objectKey }) => {
+      key = objectKey;
+      return { objectKey, kind: 'html', byteLength: html.length, sha256: 'c'.repeat(64) };
+    },
     remove: async () => { throw new Error('simulated cleanup outage'); },
   });
   const original = console.error;
