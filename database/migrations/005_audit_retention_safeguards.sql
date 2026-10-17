@@ -42,12 +42,12 @@ CREATE INDEX IF NOT EXISTS hub_audit_cleanup_runs_started_idx
 -- The trigger runs before a hold becomes visible or is released.
 -- In READ COMMITTED, cleanup reads hold rows after acquiring this lock.
 CREATE OR REPLACE FUNCTION public.hub_audit_hold_serialization()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $audit_hold$
 BEGIN
     PERFORM pg_advisory_xact_lock(73419, 9);
     RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
 END;
-$;
+$audit_hold$;
 
 DROP TRIGGER IF EXISTS hub_audit_hold_serialization_trigger
     ON public.hub_audit_investigation_holds;
