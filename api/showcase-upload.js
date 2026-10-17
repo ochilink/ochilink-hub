@@ -130,6 +130,20 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
             'showcase_upload_intents_state_check',
             'showcase_upload_intents_pkey',
           ].includes(error?.constraint) ? error.constraint : null,
+          schema: error?.schema === 'public' ? 'public' : null,
+          table: [
+            'showcase_upload_intents',
+            'apps',
+            'users',
+            'hub_sessions',
+            'security_auth_logs',
+          ].includes(error?.table) ? error.table : null,
+          // Report only known PostgreSQL privilege-check routines.
+          routine: [
+            'aclcheck_error',
+            'aclcheck_error_col',
+            'object_aclcheck',
+          ].includes(error?.routine) ? error.routine : null,
         });
       }
       return res.status(status).json({ error: status === 500 ? 'Media upload unavailable.' : error.message });
