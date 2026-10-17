@@ -145,6 +145,14 @@ test('real login creates a hashed session in an HttpOnly secure cookie', async (
         createHash('sha256').update(adminCookie.split('=')[1]).digest('hex'),
     );
     assert.equal((await request('admin', 'GET', {}, adminCookie)).status, 200);
+    const log = (await pool.query(
+        "SELECT metadata FROM security_auth_logs WHERE event_type='LOGIN_SUCCESS' ORDER BY timestamp DESC LIMIT 1"
+    )).rows[0].metadata;
+    assert.equal(log.category, 'login');
+    assert.equal(log.browser, 'Other');
+    assert.match(log.ip_hash, /^[a-f0-9]{64}$/);
+    assert.equal(JSON.stringify(log).includes('127.0.0.1'), false);
+    assert.equal(Object.hasOwn(log, 'user_agent'), false);
 });
 test('admin app CRUD persists, controls publication and audits writes', async () => {
     const app = {

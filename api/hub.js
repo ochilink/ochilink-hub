@@ -17,6 +17,24 @@ function clientIp(req) {
     return String(value).split(',')[0].trim() || 'unknown';
 }
 const hash = (value) => createHash('sha256').update(value).digest('hex');
+
+function requestAuditMetadata(req, category) {
+    const secret = process.env.RATE_LIMIT_SECRET;
+    const ip = clientIp(req);
+    const ua = String(req.headers?.['user-agent'] || '').slice(0, 1024);
+    const browser = /Edg\//i.test(ua) ? 'Edge'
+        : /Firefox\//i.test(ua) ? 'Firefox'
+        : /Chrome\//i.test(ua) ? 'Chrome'
+        : /Safari\//i.test(ua) ? 'Safari' : 'Other';
+    return {
+        ...(secret && secret.length >= 32 && ip !== 'unknown'
+            ? { ip_hash: createHmac('sha256', secret).update('audit-ip:' + ip).digest('hex') }
+            : {}),
+        browser,
+        ...(category ? { category } : {}),
+    };
+}
+
 class HttpError extends Error {
     constructor(status, message) {
         super(message);
@@ -135,7 +153,7 @@ async function currentUser(pool, req) {
         ).rows[0] || null
     );
 }
-async function throttle(pool, key, limit) {
+async function throttle(pool, key, limit, req, category) {
     const secret = process.env.RATE_LIMIT_SECRET;
     if (!secret || secret.length < 32)
         fail(503, 'Login configuration is incomplete.');
@@ -147,7 +165,7 @@ async function throttle(pool, key, limit) {
         [bucket],
     );
     if (rows[0].attempts > limit) {
-        await audit(pool, null, 'RATE_LIMITED');
+        await audit(pool, null, 'RATE_LIMITED', requestAuditMetadata(req, category));
         fail(429, 'Too many attempts. Please try again later.');
     }
 }
@@ -157,8 +175,8 @@ async function login(pool, req, res, body) {
     if (!password || Buffer.byteLength(password, 'utf8') > 72)
         fail(400, 'Invalid email or password.');
     const ip = clientIp(req);
-    await throttle(pool, `ip:${ip}`, 30);
-    await throttle(pool, `email:${email}`, 10);
+    await throttle(pool, `ip:${ip}`, 30, req, 'login_ip');
+    await throttle(pool, `email:${email}`, 10, req, 'login_email');
     const user = (
         await pool.query('SELECT * FROM users WHERE email=$1', [email])
     ).rows[0];
@@ -185,7 +203,7 @@ async function login(pool, req, res, body) {
                 updated_at=now() WHERE id=$1`,
                     [user.id],
                 );
-            await audit(client, user?.id || null, 'LOGIN_FAILED');
+            await audit(client, user?.id || null, 'LOGIN_FAILED', requestAuditMetadata(req, 'login'));
         });
         fail(401, 'Invalid email or password.');
     }
@@ -195,7 +213,7 @@ async function login(pool, req, res, body) {
             useMfa(client, user.id, body.otp),
         );
         if (!accepted) {
-            await audit(pool, user.id, 'MFA_FAILED');
+            await audit(pool, user.id, 'MFA_FAILED', requestAuditMetadata(req, 'mfa'));
             fail(401, 'Invalid authenticator or recovery code.');
         }
     }
@@ -209,7 +227,7 @@ async function login(pool, req, res, body) {
             `INSERT INTO hub_sessions (token_hash,user_id,expires_at) VALUES ($1,$2,now()+interval '15 minutes')`,
             [hash(token), user.id],
         );
-        await audit(client, user.id, 'LOGIN_SUCCESS');
+        await audit(client, user.id, 'LOGIN_SUCCESS', requestAuditMetadata(req, 'login'));
     });
     cookie(res, token, 900);
     return {
@@ -296,7 +314,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     notes = `Service: ${body.service}\nPhone: ${text(body.phone ?? '', 60, false)}\n${notes}`;
                 }
                 const ip = clientIp(req);
-                await throttle(pool, `consultation:${ip}`, 5);
+                await throttle(pool, `consultation:${ip}`, 5, req, 'consultation');
                 const bookingToken = body.booking ? body.booking_token : null;
                 await transaction(pool, async (client) => {
                     // Serialize retries before checking the token or reserving a slot.
@@ -373,7 +391,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                         'DELETE FROM hub_sessions WHERE token_hash=$1',
                         [hash(sessionToken(req))],
                     );
-                    await audit(client, user.id, 'LOGOUT');
+                    await audit(client, user.id, 'LOGOUT', requestAuditMetadata(req, 'logout'));
                 });
                 cookie(res);
                 return res.json({ ok: true });
