@@ -1,6 +1,17 @@
-
 {
   "rewrites": [
+    {
+      "source": "/api/measurements",
+      "destination": "/api/exercises"
+    },
+    {
+      "source": "/api/prs",
+      "destination": "/api/exercises"
+    },
+    {
+      "source": "/api/workouts",
+      "destination": "/api/exercises"
+    },
     {
       "source": "/api/auth/login",
       "destination": "/api/auth-login"
