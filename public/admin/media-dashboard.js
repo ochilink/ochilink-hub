@@ -45,8 +45,19 @@ function mount() {
   const button = panel.querySelector('button');
   button.disabled = true;
   const status = panel.querySelector('[role="status"]');
+  const selectedApp = document.createElement('p');
+  selectedApp.className = 'mono text-xs';
+  selectedApp.setAttribute('role', 'status');
+  selectedApp.textContent = 'Choose an application to associate with your showcase.';
+  select.addEventListener('change', () => {
+    const choice = select.selectedOptions[0];
+    selectedApp.textContent = select.value
+      ? 'Selected application: ' + choice.textContent
+      : 'Choose an application to associate with your showcase.';
+    button.disabled = true; // Remains fail-closed until upload API is enabled.
+  });
   panel.addEventListener('change', () => { button.disabled = true; });
-  target.replaceChildren(note, label, panel);
+  target.replaceChildren(note, label, selectedApp, panel);
   // The existing administrator API is the sole source of real app records.
   fetch('/api/hub?resource=admin', { credentials: 'same-origin' })
     .then(async response => {
@@ -69,6 +80,9 @@ function mount() {
       }
       select.disabled = !apps.length;
       if (!apps.length) status.textContent = 'No applications are available to select.';
+      selectedApp.textContent = apps.length
+        ? 'Choose an application to associate with your showcase.'
+        : 'No applications are available to select.';
     })
     .catch(() => {
       select.replaceChildren();
