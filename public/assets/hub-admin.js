@@ -176,13 +176,10 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
         user:
             data.users.find((u) => u.id === row.actor_id)?.email ||
             'Anonymous / unavailable',
-        ip: '—',
-        ua: '—',
-        reason:
-            row.failure_reason ||
-            (Object.keys(row.metadata || {}).length
-                ? JSON.stringify(row.metadata)
-                : '—'),
+        ip: typeof row.metadata?.ip_hash === 'string'
+            ? row.metadata.ip_hash.slice(0, 12) + '…' : '—',
+        ua: row.metadata?.browser || '—',
+        reason: row.failure_reason || row.metadata?.category || '—',
     }));
     const errors = data.errors.map((row) => ({
         ...row,
