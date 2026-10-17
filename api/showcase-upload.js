@@ -62,6 +62,8 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
       try {
         client = await pool.connect();
         await client.query('BEGIN');
+        // Coordinate publication with orphan recovery using the same transaction lock.
+        await client.query('SELECT pg_advisory_xact_lock(73419, 11)');
         await client.query(
           `UPDATE apps SET preview_object_key=$2,preview_kind=$3,
            preview_file_url=NULL,preview_updated_at=now(),updated_at=now() WHERE id=$1`,
@@ -75,10 +77,11 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
             kind: uploaded.kind, size: uploaded.byteLength, sha256: uploaded.sha256,
           })],
         );
-        await client.query(
+        const intentUpdate = await client.query(
           `UPDATE showcase_upload_intents SET state='committed',updated_at=now()
            WHERE intent_id=$1 AND state='pending'`, [intentId],
         );
+        if (intentUpdate.rowCount !== 1) throw new Error('Upload intent is no longer pending.');
         await client.query('COMMIT');
       } catch (error) {
         if (client) {
