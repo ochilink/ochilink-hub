@@ -134,12 +134,45 @@ test('media upload rejects missing app and storage failure without updating meta
 
 test('media upload rolls back database transaction when audit insertion fails', async () => {
   const db = database({ failAudit: true });
-  const handler = setup(db, async () => ({
-    objectKey: 'showcases/orphan.html', kind: 'html', byteLength: html.length, sha256: 'b'.repeat(64),
-  }));
+  const key = 'showcases/11111111-1111-4111-8111-111111111111.html';
+  const removed = [];
+  const handler = createShowcaseUploadHandler({
+    poolProvider: () => db.pool,
+    store: async () => ({
+      objectKey: key, kind: 'html', byteLength: html.length, sha256: 'b'.repeat(64),
+    }),
+    remove: async (objectKey) => { removed.push(objectKey); },
+  });
   const res = response();
   await handler(request(), res);
   assert.equal(res.statusCode, 500);
   assert.ok(db.queries.some(q => q.sql === 'ROLLBACK'));
   assert.equal(db.queries.some(q => q.sql === 'COMMIT'), false);
+  assert.deepEqual(removed, [key]);
+});
+
+test('cleanup failure does not report upload success or commit failed metadata', async () => {
+  const db = database({ failAudit: true });
+  const key = 'showcases/33333333-3333-4333-8333-333333333333.html';
+  const handler = createShowcaseUploadHandler({
+    poolProvider: () => db.pool,
+    store: async () => ({
+      objectKey: key, kind: 'html', byteLength: html.length, sha256: 'c'.repeat(64),
+    }),
+    remove: async () => { throw new Error('simulated cleanup outage'); },
+  });
+  const original = console.error;
+  const logged = [];
+  console.error = (...args) => { logged.push(args); };
+  try {
+    const res = response();
+    await handler(request(), res);
+    assert.equal(res.statusCode, 500);
+    assert.equal(res.body.error, 'Media upload unavailable.');
+    assert.ok(db.queries.some(q => q.sql === 'ROLLBACK'));
+    assert.equal(db.queries.some(q => q.sql === 'COMMIT'), false);
+    assert.ok(logged.some(args => args[1]?.code === 'SHOWCASE_ORPHAN_CLEANUP_FAILED' && args[1]?.objectKey === key));
+  } finally {
+    console.error = original;
+  }
 });
