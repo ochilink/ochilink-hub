@@ -25,7 +25,23 @@ function mount() {
   }
   const panel = createMediaUploadPanel({
     document,
-    onUpload: async () => { throw new Error('Uploads are not yet enabled.'); },
+    canUpload: () => Boolean(select.value),
+    onUpload: async file => {
+      if (!select.value) throw new Error('Select an application first.');
+      const response = await fetch('/api/showcase-upload?app_id=' + encodeURIComponent(select.value), {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': file.type, 'X-Media-Filename': file.name },
+        body: file,
+      });
+      if (!response.ok) {
+        let message = 'Upload failed (' + response.status + ').';
+        try { const data = await response.json(); if (typeof data.error === 'string') message = data.error; } catch {}
+        throw new Error(message);
+      }
+      const data = await response.json();
+      if (data.ok !== true) throw new Error('Unexpected upload response.');
+    },
   });
   const label = document.createElement('label');
   label.className = 'ochi-media-label';
@@ -40,7 +56,7 @@ function mount() {
   select.append(option);
   label.append(select);
   const note = document.createElement('p');
-  note.textContent = 'Preview mode: files are not sent to storage yet.';
+  note.textContent = 'Preview environment: upload only harmless standalone HTML or image test files.';
   note.className = 'mono text-xs';
   const button = panel.querySelector('button');
   button.disabled = true;
@@ -54,9 +70,9 @@ function mount() {
     selectedApp.textContent = select.value
       ? 'Selected application: ' + choice.textContent
       : 'Choose an application to associate with your showcase.';
-    button.disabled = true; // Remains fail-closed until upload API is enabled.
+    panel.refreshUploadState();
   });
-  panel.addEventListener('change', () => { button.disabled = true; });
+  panel.addEventListener('change', () => { panel.refreshUploadState(); });
   target.replaceChildren(note, label, selectedApp, panel);
   // The existing administrator API is the sole source of real app records.
   fetch('/api/hub?resource=admin', { credentials: 'same-origin' })
@@ -79,6 +95,7 @@ function mount() {
         select.append(item);
       }
       select.disabled = !apps.length;
+      panel.refreshUploadState();
       if (!apps.length) status.textContent = 'No applications are available to select.';
       selectedApp.textContent = apps.length
         ? 'Choose an application to associate with your showcase.'
