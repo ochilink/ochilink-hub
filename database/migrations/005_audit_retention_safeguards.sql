@@ -38,6 +38,23 @@ CREATE TABLE IF NOT EXISTS public.hub_audit_cleanup_runs (
 CREATE INDEX IF NOT EXISTS hub_audit_cleanup_runs_started_idx
     ON public.hub_audit_cleanup_runs(started_at DESC);
 
+-- Hold creation/release and cleanup acquire the same transaction-scoped lock.
+-- The trigger runs before a hold becomes visible or is released.
+-- In READ COMMITTED, cleanup reads hold rows after acquiring this lock.
+CREATE OR REPLACE FUNCTION public.hub_audit_hold_serialization()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+    PERFORM pg_advisory_xact_lock(73419, 9);
+    RETURN CASE WHEN TG_OP = 'DELETE' THEN OLD ELSE NEW END;
+END;
+$;
+
+DROP TRIGGER IF EXISTS hub_audit_hold_serialization_trigger
+    ON public.hub_audit_investigation_holds;
+CREATE TRIGGER hub_audit_hold_serialization_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON public.hub_audit_investigation_holds
+FOR EACH ROW EXECUTE FUNCTION public.hub_audit_hold_serialization();
+
 INSERT INTO public.hub_schema_migrations(version)
 VALUES ('005_audit_retention_safeguards')
 ON CONFLICT (version) DO NOTHING;
