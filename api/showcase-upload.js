@@ -118,6 +118,18 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
           code: 'SHOWCASE_UPLOAD_FAILED',
           stage,
           category: error instanceof TypeError ? 'TypeError' : 'InternalError',
+          // PostgreSQL SQLSTATE is exactly five alphanumeric characters.
+          // Log constraint identifiers only from the known migration schema.
+          db_code: typeof error?.code === 'string' && /^[A-Z0-9]{5}$/.test(error.code)
+            ? error.code : null,
+          constraint: [
+            'showcase_upload_intents_actor_id_fkey',
+            'showcase_upload_intents_app_id_fkey',
+            'showcase_upload_intents_object_key_check',
+            'showcase_upload_intents_object_key_key',
+            'showcase_upload_intents_state_check',
+            'showcase_upload_intents_pkey',
+          ].includes(error?.constraint) ? error.constraint : null,
         });
       }
       return res.status(status).json({ error: status === 500 ? 'Media upload unavailable.' : error.message });
