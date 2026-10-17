@@ -20,12 +20,14 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
+    let stage = 'request_validation';
     try {
       if (req.method !== 'POST') deny(405, 'Method not allowed.');
       if (!req.headers?.host || req.headers.origin !== 'https://' + req.headers.host)
         deny(403, 'Invalid request origin.');
       const token = String(req.headers.cookie || '').match(/(?:^|;\s*)ochi_session=([a-f0-9]{64})(?:;|$)/)?.[1];
       if (!token) deny(401, 'Authentication required.');
+      stage = 'database_auth';
       const pool = poolProvider();
       const { rows: users } = await pool.query(
         `SELECT u.id FROM hub_sessions s JOIN users u ON u.id=s.user_id
@@ -40,15 +42,19 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
       if (Number.isFinite(length) && length > LIMIT) deny(413, 'Upload exceeds 5 MB.');
       const filename = String(req.headers['x-media-filename'] || '');
       const contentType = String(req.headers['content-type'] || '').split(';')[0].trim().toLowerCase();
+      stage = 'file_validation';
       const bytes = await boundedBody(req);
       const validated = validateShowcaseMedia({ bytes, filename, contentType });
+      stage = 'application_lookup';
       const { rows: apps } = await pool.query('SELECT id FROM apps WHERE id=$1', [appId]);
       if (!apps.length) deny(404, 'Application not found.');
+      stage = 'intent_creation';
       const intentId = await createShowcaseIntent(pool, {
         appId, actorId: users[0].id, objectKey: validated.objectKey,
       });
       let uploaded;
       try {
+        stage = 'blob_storage';
         uploaded = await store({ bytes, filename, contentType, objectKey: validated.objectKey });
         if (uploaded.objectKey !== validated.objectKey) throw new Error('Uploaded object key mismatch.');
       } catch (error) {
@@ -60,6 +66,7 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
       // before enabling this endpoint in a deployed environment.
       let client;
       try {
+        stage = 'metadata_commit';
         client = await pool.connect();
         await client.query('BEGIN');
         // Coordinate publication with orphan recovery using the same transaction lock.
@@ -104,6 +111,15 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
       return res.status(201).json({ ok: true, kind: uploaded.kind });
     } catch (error) {
       const status = Number.isInteger(error.status) && error.status >= 400 && error.status < 500 ? error.status : 500;
+      if (status === 500) {
+        // Emit only fixed stage labels and generic error categories; never log secrets,
+        // SQL statements, connection strings, filenames, object keys or raw exceptions.
+        console.error('Showcase upload failed', {
+          code: 'SHOWCASE_UPLOAD_FAILED',
+          stage,
+          category: error instanceof TypeError ? 'TypeError' : 'InternalError',
+        });
+      }
       return res.status(status).json({ error: status === 500 ? 'Media upload unavailable.' : error.message });
     }
   };
