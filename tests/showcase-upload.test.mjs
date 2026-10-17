@@ -52,6 +52,8 @@ function database({ admin = true, app = true, failAudit = false } = {}) {
         queries.push({ sql });
         if (sql.includes('FROM hub_sessions')) return { rows: admin ? [{ id: adminId }] : [] };
         if (sql.includes('SELECT id FROM apps')) return { rows: app ? [{ id: appId }] : [] };
+        if (sql.includes('INSERT INTO showcase_upload_intents')) return { rows: [{ intent_id: appId }] };
+        if (sql.includes('UPDATE showcase_upload_intents')) return { rowCount: 1 };
         throw new Error('Unexpected query');
       },
       async connect() { return client; },
