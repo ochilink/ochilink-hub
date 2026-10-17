@@ -37,3 +37,31 @@ test('cleanup fails closed without holds schema and preserves audit records',asy
   await assert.rejects(cleanupAuditRetention(pool,{batchSize:0}),RangeError);
  }finally{await db.close();}
 });
+
+test('cleanup rolls back deleted records if cleanup history update fails', async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(await readFile('database/migrations/001_ochilink_hub.sql','utf8'));
+    await db.exec(await readFile('database/migrations/005_audit_retention_safeguards.sql','utf8'));
+    await db.query("INSERT INTO security_auth_logs(event_type,timestamp) VALUES ('OLD',now()-interval '120 days')");
+    await db.query("INSERT INTO system_error_logs(severity,service,message,created_at) VALUES ('ERROR','test','old',now()-interval '120 days')");
+    let injected = false;
+    const pool = {
+      connect: async () => ({
+        async query(sql, args) {
+          if (typeof sql === 'string' && sql.includes('UPDATE public.hub_audit_cleanup_runs')) {
+            injected = true;
+            throw new Error('simulated cleanup history failure');
+          }
+          return db.query(sql,args);
+        },
+        release() {},
+      }),
+    };
+    await assert.rejects(cleanupAuditRetention(pool,{batchSize:1}),/simulated cleanup history failure/);
+    assert.equal(injected,true);
+    assert.equal((await db.query('SELECT count(*)::int AS n FROM security_auth_logs')).rows[0].n,1);
+    assert.equal((await db.query('SELECT count(*)::int AS n FROM system_error_logs')).rows[0].n,1);
+    assert.equal((await db.query('SELECT count(*)::int AS n FROM hub_audit_cleanup_runs')).rows[0].n,0);
+  } finally { await db.close(); }
+});
