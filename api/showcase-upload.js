@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 import { getPool } from './_db.js';
-import { storeShowcaseMedia } from '../lib/showcase-blob.js';
+import { storeShowcaseMedia, deleteShowcaseMedia } from '../lib/showcase-blob.js';
 import { MAX_MEDIA_BYTES, validateShowcaseMedia } from '../lib/showcase-media.js';
 
 const LIMIT = MAX_MEDIA_BYTES;
@@ -15,7 +15,7 @@ async function boundedBody(req) {
   }
   return Buffer.concat(chunks);
 }
-export function createShowcaseUploadHandler({ poolProvider = getPool, store = storeShowcaseMedia } = {}) {
+export function createShowcaseUploadHandler({ poolProvider = getPool, store = storeShowcaseMedia, remove = deleteShowcaseMedia } = {}) {
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -47,8 +47,9 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
       // The object is private and cannot be published without committed metadata.
       // A failed transaction can leave an orphan; cleanup reconciliation is required
       // before enabling this endpoint in a deployed environment.
-      const client = await pool.connect();
+      let client;
       try {
+        client = await pool.connect();
         await client.query('BEGIN');
         await client.query(
           `UPDATE apps SET preview_object_key=$2,preview_kind=$3,
@@ -65,9 +66,19 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
         );
         await client.query('COMMIT');
       } catch (error) {
-        await client.query('ROLLBACK');
+        if (client) {
+          try { await client.query('ROLLBACK'); } catch { /* original failure takes priority */ }
+        }
+        try { await remove(uploaded.objectKey); }
+        catch (cleanupError) {
+          console.error('Showcase orphan cleanup failed', {
+            code: 'SHOWCASE_ORPHAN_CLEANUP_FAILED',
+            objectKey: uploaded.objectKey,
+            error: String(cleanupError?.code || cleanupError?.name || 'UNKNOWN'),
+          });
+        }
         throw error;
-      } finally { client.release(); }
+      } finally { client?.release(); }
       return res.status(201).json({ ok: true, kind: uploaded.kind });
     } catch (error) {
       const status = Number.isInteger(error.status) && error.status >= 400 && error.status < 500 ? error.status : 500;
