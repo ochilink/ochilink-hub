@@ -24,7 +24,7 @@ test('isolated booking rate limits return 429, log blocks, and isolate IP bucket
         }
         const handler = createHandler(() => pool);
         const invalidSlot = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
-        async function attempt(ip) {
+        async function attempt(ip, agent = 'Mozilla/5.0 Chrome/120.0 private-test-agent') {
             const result = { status: 200 };
             const res = {
                 setHeader() {},
@@ -39,6 +39,7 @@ test('isolated booking rate limits return 429, log blocks, and isolate IP bucket
                     origin: 'https://hub.test',
                     'content-type': 'application/json',
                     'x-forwarded-for': ip,
+                    'user-agent': agent,
                 },
                 body: {
                     client_name: 'Rate Limit Test',
@@ -58,6 +59,19 @@ test('isolated booking rate limits return 429, log blocks, and isolate IP bucket
             "SELECT event_type FROM security_auth_logs WHERE event_type='RATE_LIMITED'",
         );
         assert.equal(logs.rows.length, 2);
+        const audited = await pool.query(
+            "SELECT metadata FROM security_auth_logs WHERE event_type='RATE_LIMITED' ORDER BY timestamp"
+        );
+        assert.equal(audited.rows.length, 2);
+        for (const { metadata } of audited.rows) {
+            assert.equal(metadata.category, 'consultation');
+            assert.equal(metadata.browser, 'Chrome');
+            assert.match(metadata.ip_hash, /^[a-f0-9]{64}$/);
+            assert.equal(JSON.stringify(metadata).includes('192.0.2.10'), false);
+            assert.equal(JSON.stringify(metadata).includes('private-test-agent'), false);
+            assert.equal(Object.hasOwn(metadata, 'user_agent'), false);
+        }
+        assert.equal(audited.rows[0].metadata.ip_hash, audited.rows[1].metadata.ip_hash);
         assert.equal((await attempt('192.0.2.11')).status, 409);
         const buckets = await pool.query(
             'SELECT attempts FROM hub_rate_limits ORDER BY attempts DESC',
