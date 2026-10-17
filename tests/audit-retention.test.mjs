@@ -41,6 +41,29 @@ test('audit retention migration is repeatable and enforces investigation holds',
             `, [recordId, userId]),
         );
 
+        const trigger = await db.query(`
+            SELECT tgname FROM pg_trigger
+            WHERE tgrelid='public.hub_audit_investigation_holds'::regclass
+              AND tgname='hub_audit_hold_serialization_trigger' AND NOT tgisinternal
+        `);
+        assert.equal(trigger.rows.length, 1);
+        await db.query('BEGIN');
+        try {
+            await db.query(`
+                INSERT INTO public.hub_audit_investigation_holds
+                  (source_table,record_id,reason,created_by)
+                VALUES ('system_error_logs','22222222-2222-4222-8222-222222222222',
+                        'Another investigation record',$1)
+            `, [userId]);
+            const lock = await db.query(`
+                SELECT count(*)::int AS n FROM pg_locks
+                WHERE locktype='advisory' AND classid=73419 AND objid=9
+                  AND granted AND pid=pg_backend_pid()
+            `);
+            assert.ok(lock.rows[0].n >= 1);
+        } finally {
+            await db.query('ROLLBACK');
+        }
         const held = await db.query(`
             SELECT count(*)::int AS count FROM public.hub_audit_investigation_holds
             WHERE source_table='security_auth_logs' AND record_id=$1 AND released_at IS NULL
