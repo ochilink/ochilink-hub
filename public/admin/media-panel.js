@@ -18,7 +18,7 @@ export function validateMediaSelection(file) {
   return null;
 }
 
-export function createMediaUploadPanel({ document: doc = document, onUpload }) {
+export function createMediaUploadPanel({ document: doc = document, onUpload, canUpload = () => true }) {
   if (typeof onUpload !== 'function') throw new TypeError('onUpload is required');
   const root = doc.createElement('section');
   root.className = 'ochi-media-panel';
@@ -44,10 +44,12 @@ export function createMediaUploadPanel({ document: doc = document, onUpload }) {
   upload.textContent = 'Upload selected media';
   upload.disabled = true;
   let selected = null;
+  let busy = false;
+  function refresh() { upload.disabled = busy || !selected || !canUpload(); }
   function choose(file) {
     const error = validateMediaSelection(file);
     selected = error ? null : file;
-    upload.disabled = Boolean(error);
+    refresh();
     status.textContent = error || ('Selected: ' + file.name);
   }
   input.addEventListener('change', () => choose(input.files?.[0]));
@@ -64,19 +66,24 @@ export function createMediaUploadPanel({ document: doc = document, onUpload }) {
     choose(event.dataTransfer?.files?.[0]);
   });
   upload.addEventListener('click', async () => {
-    if (!selected) return;
-    upload.disabled = true;
+    if (!selected || busy || !canUpload()) return;
+    busy = true;
+    refresh();
     status.textContent = 'Uploading…';
     try {
       await onUpload(selected);
       status.textContent = 'Upload completed.';
       selected = null;
       input.value = '';
+      busy = false;
+      refresh();
     } catch {
       status.textContent = 'Upload failed. Please retry.';
-      upload.disabled = false;
+      busy = false;
+      refresh();
     }
   });
   root.append(heading, hint, drop, input, status, upload);
+  root.refreshUploadState = refresh;
   return root;
 }
