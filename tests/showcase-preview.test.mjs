@@ -55,7 +55,7 @@ test.after(() => {
 });
 test('preview endpoint is unavailable in production before database access', async () => {
   process.env.VERCEL_ENV = 'production';
-  const s = setup();
+  const s = setup({ env: { ...previewEnv, VERCEL_ENV: 'production' } });
   const r = await run(s);
   assert.equal(r.statusCode, 404);
   assert.deepEqual(s.counters(), { queries: 0, fetches: 0 });
