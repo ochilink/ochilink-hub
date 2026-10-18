@@ -11,7 +11,10 @@ const css = `
 .ochi-media-drop{border:2px dashed var(--border-strong);border-radius:14px;padding:32px 18px;text-align:center;cursor:pointer;background:var(--bg);color:var(--text-muted);transition:border-color .15s}
 .ochi-media-drop:hover,.ochi-media-drop:focus-visible{border-color:var(--lime);outline-offset:3px}
 .ochi-media-panel button{border-radius:12px;padding:12px 18px;font-weight:700;background:var(--lime);color:#00332a;justify-self:start}
-.ochi-media-panel button:disabled{opacity:.45;cursor:not-allowed}
+ .ochi-media-panel button:disabled{opacity:.45;cursor:not-allowed}
+.ochi-media-viewer{width:100%;min-height:360px;border:1px solid var(--border-strong);border-radius:12px;background:white}
+.ochi-media-viewer-wrap{display:grid;gap:10px}
+.ochi-media-viewer-wrap[hidden]{display:none}
 `;
 function mount() {
   const target = document.getElementById('ochi-media-mount');
@@ -73,7 +76,68 @@ function mount() {
     panel.refreshUploadState();
   });
   panel.addEventListener('change', () => { panel.refreshUploadState(); });
-  target.replaceChildren(note, label, selectedApp, panel);
+  const viewerWrap = document.createElement('section');
+  viewerWrap.className = 'ochi-media-viewer-wrap';
+  viewerWrap.hidden = true;
+  const viewerTitle = document.createElement('h3');
+  viewerTitle.textContent = 'Safe visual preview (scripts disabled)';
+  const viewer = document.createElement('iframe');
+  viewer.className = 'ochi-media-viewer';
+  viewer.title = 'Isolated application showcase preview';
+  viewer.setAttribute('sandbox', '');
+  viewer.setAttribute('referrerpolicy', 'no-referrer');
+  viewer.setAttribute('loading', 'lazy');
+  const previewStatus = document.createElement('p');
+  previewStatus.setAttribute('role', 'status');
+  const previewButton = document.createElement('button');
+  previewButton.type = 'button';
+  previewButton.textContent = 'View safe preview';
+  previewButton.disabled = true;
+  const closePreview = document.createElement('button');
+  closePreview.type = 'button';
+  closePreview.textContent = 'Close preview';
+  closePreview.addEventListener('click', () => {
+    viewer.removeAttribute('srcdoc');
+    viewerWrap.hidden = true;
+    previewStatus.textContent = '';
+  });
+  viewerWrap.append(viewerTitle, viewer, closePreview);
+  previewButton.addEventListener('click', async () => {
+    if (!select.value) return;
+    previewButton.disabled = true;
+    previewStatus.textContent = 'Loading private preview…';
+    viewerWrap.hidden = true;
+    try {
+      const response = await fetch('/api/showcase-preview?app_id=' + encodeURIComponent(select.value), {
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      if (!response.ok) throw new Error('Preview unavailable (' + response.status + ').');
+      const type = response.headers.get('content-type') || '';
+      if (!type.toLowerCase().startsWith('text/plain')) {
+        throw new Error('Visual HTML preview is only available for HTML files.');
+      }
+      const html = await response.text();
+      if (html.length > 5 * 1024 * 1024) throw new Error('Preview is too large.');
+      // The restrictive CSP is injected before any untrusted markup. No scripts,
+      // external resources, forms or network requests are permitted.
+      const policy = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; font-src data:; form-action \'none\'; base-uri \'none\'">';
+      viewer.srcdoc = policy + html;
+      viewerWrap.hidden = false;
+      previewStatus.textContent = 'Showing isolated visual preview.';
+    } catch (error) {
+      previewStatus.textContent = error.message || 'Preview unavailable.';
+    } finally {
+      previewButton.disabled = !select.value;
+    }
+  });
+  select.addEventListener('change', () => {
+    previewButton.disabled = !select.value;
+    viewer.removeAttribute('srcdoc');
+    viewerWrap.hidden = true;
+    previewStatus.textContent = '';
+  });
+  target.replaceChildren(note, label, selectedApp, panel, previewButton, previewStatus, viewerWrap);
   // The existing administrator API is the sole source of real app records.
   fetch('/api/hub?resource=admin', { credentials: 'same-origin' })
     .then(async response => {
