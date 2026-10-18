@@ -15,6 +15,13 @@ const css = `
 .ochi-media-viewer{width:100%;min-height:360px;border:1px solid var(--border-strong);border-radius:12px;background:white}
 .ochi-media-viewer-wrap{display:grid;gap:10px}
 .ochi-media-viewer-wrap[hidden]{display:none}
+.ochi-media-preview-button,.ochi-media-close-button{border:1px solid var(--border-strong);border-radius:12px;padding:12px 18px;font-weight:700;cursor:pointer;max-width:100%}
+.ochi-media-preview-button{background:var(--lime);color:#00332a}
+.ochi-media-preview-button:disabled{opacity:.45;cursor:not-allowed}
+.ochi-media-close-button{background:var(--bg-elevated);color:var(--text);justify-self:start}
+.ochi-media-image{display:block;max-width:100%;max-height:65vh;object-fit:contain;margin:auto;border-radius:10px}
+.ochi-media-image[hidden],.ochi-media-viewer[hidden]{display:none}
+@media(max-width:480px){.ochi-media-drop{padding:22px 12px}.ochi-media-viewer{min-height:280px}.ochi-media-preview-button,.ochi-media-close-button{width:100%}}
 `;
 function mount() {
   const target = document.getElementById('ochi-media-mount');
@@ -79,6 +86,18 @@ function mount() {
   const viewerWrap = document.createElement('section');
   viewerWrap.className = 'ochi-media-viewer-wrap';
   viewerWrap.hidden = true;
+  let previewGeneration = 0;
+  let imageUrl = null;
+  function clearPreview() {
+    previewGeneration++;
+    viewer.removeAttribute('srcdoc');
+    if (imageUrl) URL.revokeObjectURL(imageUrl);
+    imageUrl = null;
+    image.removeAttribute('src');
+    image.hidden = true;
+    viewer.hidden = false;
+    viewerWrap.hidden = true;
+  }
   const viewerTitle = document.createElement('h3');
   viewerTitle.textContent = 'Safe visual preview (scripts disabled)';
   const viewer = document.createElement('iframe');
@@ -87,26 +106,33 @@ function mount() {
   viewer.setAttribute('sandbox', '');
   viewer.setAttribute('referrerpolicy', 'no-referrer');
   viewer.setAttribute('loading', 'lazy');
+  const image = document.createElement('img');
+  image.className = 'ochi-media-image';
+  image.alt = 'Selected application showcase image';
+  image.hidden = true;
   const previewStatus = document.createElement('p');
   previewStatus.setAttribute('role', 'status');
   const previewButton = document.createElement('button');
   previewButton.type = 'button';
+  previewButton.className = 'ochi-media-preview-button';
   previewButton.textContent = 'View safe preview';
   previewButton.disabled = true;
   const closePreview = document.createElement('button');
   closePreview.type = 'button';
+  closePreview.className = 'ochi-media-close-button';
   closePreview.textContent = 'Close preview';
   closePreview.addEventListener('click', () => {
-    viewer.removeAttribute('srcdoc');
-    viewerWrap.hidden = true;
+    clearPreview();
     previewStatus.textContent = '';
   });
-  viewerWrap.append(viewerTitle, viewer, closePreview);
+  viewerWrap.append(viewerTitle, viewer, image, closePreview);
   previewButton.addEventListener('click', async () => {
     if (!select.value) return;
+    clearPreview();
+    const generation = previewGeneration;
+    const selectedId = select.value;
     previewButton.disabled = true;
     previewStatus.textContent = 'Loading private preview…';
-    viewerWrap.hidden = true;
     try {
       const response = await fetch('/api/showcase-preview?app_id=' + encodeURIComponent(select.value), {
         credentials: 'same-origin',
@@ -114,27 +140,40 @@ function mount() {
       });
       if (!response.ok) throw new Error('Preview unavailable (' + response.status + ').');
       const type = response.headers.get('content-type') || '';
-      if (!type.toLowerCase().startsWith('text/plain')) {
-        throw new Error('Visual HTML preview is only available for HTML files.');
+      const mime = type.split(';')[0].trim().toLowerCase();
+      if (mime === 'text/plain') {
+        const html = await response.text();
+        if (generation !== previewGeneration || selectedId !== select.value) return;
+        if (html.length > 5 * 1024 * 1024) throw new Error('Preview is too large.');
+        // Untrusted HTML is restricted to an opaque-origin, script-free sandbox.
+        const policy = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; font-src data:; form-action \'none\'; base-uri \'none\'">';
+        viewer.srcdoc = policy + html;
+        viewer.hidden = false;
+        image.hidden = true;
+      } else if (['image/png', 'image/jpeg', 'image/webp'].includes(mime)) {
+        const blob = await response.blob();
+        if (generation !== previewGeneration || selectedId !== select.value) return;
+        if (blob.size === 0 || blob.size > 5 * 1024 * 1024) throw new Error('Invalid preview image size.');
+        imageUrl = URL.createObjectURL(blob);
+        image.src = imageUrl;
+        image.hidden = false;
+        viewer.hidden = true;
+        viewerTitle.textContent = 'Private image preview';
+      } else {
+        throw new Error('Unsupported preview content type.');
       }
-      const html = await response.text();
-      if (html.length > 5 * 1024 * 1024) throw new Error('Preview is too large.');
-      // The restrictive CSP is injected before any untrusted markup. No scripts,
-      // external resources, forms or network requests are permitted.
-      const policy = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; img-src data:; font-src data:; form-action \'none\'; base-uri \'none\'">';
-      viewer.srcdoc = policy + html;
+      if (mime === 'text/plain') viewerTitle.textContent = 'Safe visual preview (scripts disabled)';
       viewerWrap.hidden = false;
-      previewStatus.textContent = 'Showing isolated visual preview.';
+      previewStatus.textContent = 'Showing private preview.';
     } catch (error) {
-      previewStatus.textContent = error.message || 'Preview unavailable.';
+      if (generation === previewGeneration) previewStatus.textContent = error.message || 'Preview unavailable.';
     } finally {
-      previewButton.disabled = !select.value;
+      if (generation === previewGeneration) previewButton.disabled = !select.value;
     }
   });
   select.addEventListener('change', () => {
     previewButton.disabled = !select.value;
-    viewer.removeAttribute('srcdoc');
-    viewerWrap.hidden = true;
+    clearPreview();
     previewStatus.textContent = '';
   });
   target.replaceChildren(note, label, selectedApp, panel, previewButton, previewStatus, viewerWrap);
