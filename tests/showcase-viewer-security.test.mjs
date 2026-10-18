@@ -19,17 +19,22 @@ test('viewer applies restrictive CSP to untrusted srcdoc content', () => {
   assert.doesNotMatch(source, /script-src\s+[^;]*unsafe-inline/);
   assert.doesNotMatch(source, /connect-src\s+\*/);
 });
-test('viewer only accepts authenticated text preview and never executes fetched HTML directly', () => {
+test('viewer accepts only authenticated HTML text or approved image types without executing HTML directly', () => {
   assert.match(source, /fetch\('\/api\/showcase-preview\?app_id='/);
   assert.match(source, /credentials:\s*'same-origin'/);
   assert.match(source, /cache:\s*'no-store'/);
-  assert.match(source, /startsWith\('text\/plain'\)/);
+  assert.match(source, /mime === 'text\/plain'/);
+  assert.match(source, /\['image\/png', 'image\/jpeg', 'image\/webp'\]\.includes\(mime\)/);
+  assert.match(source, /URL\.createObjectURL\(blob\)/);
   assert.match(source, /viewer\.srcdoc\s*=\s*policy\s*\+\s*html/);
   assert.doesNotMatch(source, /document\.write\(|eval\(|new Function\(/);
 });
 test('viewer clears untrusted content when selection changes or preview closes', () => {
   assert.match(source, /closePreview\.addEventListener\('click'/);
   assert.match(source, /select\.addEventListener\('change'/);
-  const matches = source.match(/viewer\.removeAttribute\('srcdoc'\)/g) || [];
-  assert.ok(matches.length >= 2);
+  assert.match(source, /function clearPreview\(\)/);
+  const matches = source.match(/clearPreview\(\)/g) || [];
+  assert.ok(matches.length >= 3);
+  assert.match(source, /viewer\.removeAttribute\('srcdoc'\)/);
+  assert.match(source, /URL\.revokeObjectURL\(imageUrl\)/);
 });
