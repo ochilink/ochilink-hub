@@ -3,6 +3,11 @@ import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { createShowcasePreviewHandler } from '../api/showcase-preview.js';
 
+const previewEnv = {
+  VERCEL_ENV: 'preview',
+  BLOB_STORE_ID: 'preview-test-store',
+  BLOB_READ_WRITE_TOKEN: 'mock-preview-token',
+};
 const appId = '11111111-1111-4111-8111-111111111111';
 const objectKey = 'showcases/33333333-3333-4333-8333-333333333333.html';
 const token = 'a'.repeat(64);
@@ -17,23 +22,26 @@ function response() {
   };
 }
 function setup({ user = true, media = { kind: 'html', object_key: objectKey },
-  bytes = html, retrieve = true } = {}) {
+  bytes = html, retrieve = true, env = previewEnv } = {}) {
   let queries = 0;
   let fetches = 0;
+  let lastOptions;
   const pool = { async query() {
     queries++;
     return { rows: queries === 1 ? (user ? [{ id: 'admin' }] : []) : (media ? [media] : []) };
   }};
   const handler = createShowcasePreviewHandler({
     poolProvider: () => pool,
-    retrieve: async () => {
+    env,
+    retrieve: async (_key, options) => {
+      lastOptions = options;
       fetches++;
       return retrieve ? { stream: Readable.from([bytes]) } : null;
     },
   });
   const req = { method: 'GET', query: { app_id: appId },
     headers: { cookie: 'ochi_session=' + token } };
-  return { handler, req, counters: () => ({ queries, fetches }) };
+  return { handler, req, counters: () => ({ queries, fetches }), options: () => lastOptions };
 }
 async function run(s, overrides = {}) {
   const res = response();
@@ -101,4 +109,21 @@ test('image content type is restricted to validated object extension', async () 
   assert.equal(r.headers['content-type'], 'image/png');
   const mismatch = setup({ media: { kind: 'html', object_key: key } });
   assert.equal((await run(mismatch)).statusCode, 404);
+});
+
+test('retrieval uses only the explicitly configured Preview Blob credentials', async () => {
+  const s = setup({ env: { ...previewEnv, PROD_BLOB_READ_WRITE_TOKEN: 'production-token', PROD_BLOB_STORE_ID: 'production-store' } });
+  const r = await run(s);
+  assert.equal(r.statusCode, 200);
+  assert.deepEqual(s.options(), {
+    access: 'private',
+    token: 'mock-preview-token',
+    storeId: 'preview-test-store',
+  });
+});
+test('missing Preview credentials prevent retrieval before Blob access', async () => {
+  const s = setup({ env: { VERCEL_ENV: 'preview', PROD_BLOB_READ_WRITE_TOKEN: 'production-token', PROD_BLOB_STORE_ID: 'production-store' } });
+  const r = await run(s);
+  assert.equal(r.statusCode, 500);
+  assert.equal(s.counters().fetches, 0);
 });
