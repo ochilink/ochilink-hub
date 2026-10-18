@@ -3,6 +3,19 @@ import assert from 'node:assert/strict';
 import { Readable } from 'node:stream';
 import { createShowcaseUploadHandler } from '../api/showcase-upload.js';
 
+// These integration-style route tests exercise the enabled Preview workflow.
+// Production fail-closed behavior is covered separately by showcase-media-gate.test.mjs.
+const previousVercelEnv = process.env.VERCEL_ENV;
+const previousMediaFlag = process.env.SHOWCASE_MEDIA_ENABLED;
+process.env.VERCEL_ENV = 'preview';
+delete process.env.SHOWCASE_MEDIA_ENABLED;
+test.after(() => {
+  if (previousVercelEnv === undefined) delete process.env.VERCEL_ENV;
+  else process.env.VERCEL_ENV = previousVercelEnv;
+  if (previousMediaFlag === undefined) delete process.env.SHOWCASE_MEDIA_ENABLED;
+  else process.env.SHOWCASE_MEDIA_ENABLED = previousMediaFlag;
+});
+
 const appId = '11111111-1111-4111-8111-111111111111';
 const adminId = '22222222-2222-4222-8222-222222222222';
 const html = Buffer.from('<!doctype html><html><body>Demo</body></html>');
