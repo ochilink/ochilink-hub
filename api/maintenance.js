@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { getPool } from './_db.js';
 import { stripeReady, reconcileBookingPayments } from '../lib/payments.js';
 import { flushMail } from '../lib/mail.js';
+import { observeShowcaseRecovery } from '../lib/showcase-recovery-monitor.js';
 export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
     const expected = process.env.CRON_SECRET
@@ -47,7 +48,10 @@ export default async function handler(req, res) {
         await pool.query(
             "DELETE FROM hub_email_outbox WHERE created_at<now()-interval '90 days'",
         );
-        return res.json({ ok: true, mail });
+        // Observation is isolated from existing maintenance. Preview only;
+        // Vercel's configured cron may not automatically run on Preview.
+        const showcaseRecovery = await observeShowcaseRecovery(pool);
+        return res.json({ ok: true, mail, ...(process.env.VERCEL_ENV === 'preview' ? { showcaseRecovery } : {}) });
     } catch {
         return res.status(503).json({ error: 'Maintenance failed.' });
     }
