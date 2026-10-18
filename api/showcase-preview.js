@@ -1,13 +1,14 @@
 import { createHash } from 'node:crypto';
 import { Readable } from 'node:stream';
 import { getPool } from './_db.js';
+import { showcaseBlobOptions } from '../lib/showcase-blob.js';
 
 const OBJECT_KEY = /^showcases\/[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\.(html|png|jpg|webp)$/;
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const MAX_BYTES = 5 * 1024 * 1024;
 const deny = (status, error) => ({ status, error });
 
-export function createShowcasePreviewHandler({ poolProvider = getPool, retrieve } = {}) {
+export function createShowcasePreviewHandler({ poolProvider = getPool, retrieve, env = process.env } = {}) {
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'private, no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -16,7 +17,7 @@ export function createShowcasePreviewHandler({ poolProvider = getPool, retrieve 
     res.setHeader('Referrer-Policy', 'no-referrer');
     try {
       // Phase one is an administrator-only, non-executable preview in Preview.
-      if (process.env.VERCEL_ENV !== 'preview') throw deny(404, 'Not found.');
+      if (env.VERCEL_ENV !== 'preview') throw deny(404, 'Not found.');
       if (req.method !== 'GET') throw deny(405, 'Method not allowed.');
       const token = String(req.headers?.cookie || '').match(/(?:^|;\s*)ochi_session=([a-f0-9]{64})(?:;|$)/)?.[1];
       if (!token) throw deny(401, 'Authentication required.');
@@ -45,7 +46,10 @@ export function createShowcasePreviewHandler({ poolProvider = getPool, retrieve 
       const ext = media.object_key.slice(media.object_key.lastIndexOf('.') + 1);
       if ((media.kind === 'html') !== (ext === 'html')) throw deny(404, 'Preview unavailable.');
       const getBlob = retrieve ?? (await import('@vercel/blob')).get;
-      const blob = await getBlob(media.object_key, { access: 'private' });
+      const blob = await getBlob(media.object_key, {
+        access: 'private',
+        ...showcaseBlobOptions(env),
+      });
       if (!blob?.stream) throw deny(404, 'Preview unavailable.');
       const stream = typeof blob.stream.getReader === 'function'
         ? Readable.fromWeb(blob.stream) : blob.stream;
