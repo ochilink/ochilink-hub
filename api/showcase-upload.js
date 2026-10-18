@@ -48,31 +48,6 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
       stage = 'application_lookup';
       const { rows: apps } = await pool.query('SELECT id FROM apps WHERE id=$1', [appId]);
       if (!apps.length) deny(404, 'Application not found.');
-      if (process.env.VERCEL_ENV === 'preview') {
-        try {
-          const { rows: diagnosticRows } = await pool.query(`
-            SELECT current_database() AS database_name,
-                   current_user AS database_role,
-                   current_setting('search_path') AS search_path,
-                   to_regclass('public.showcase_upload_intents') IS NOT NULL AS qualified_exists,
-                   to_regclass('showcase_upload_intents') IS NOT NULL AS unqualified_exists
-          `);
-          const diagnostic = diagnosticRows[0] || {};
-          console.info('Preview showcase database identity', {
-            code: 'PREVIEW_SHOWCASE_DB_IDENTITY',
-            database_name: diagnostic.database_name === 'neondb' ? 'neondb' : 'other',
-            database_role: diagnostic.database_role === 'neondb_owner' ? 'neondb_owner' : 'other',
-            search_path_has_public: typeof diagnostic.search_path === 'string' &&
-              diagnostic.search_path.split(',').some(part => part.trim() === 'public'),
-            qualified_exists: diagnostic.qualified_exists === true,
-            unqualified_exists: diagnostic.unqualified_exists === true,
-          });
-        } catch {
-          console.error('Preview showcase database identity unavailable', {
-            code: 'PREVIEW_SHOWCASE_DB_IDENTITY_FAILED',
-          });
-        }
-      }
       stage = 'intent_creation';
       const intentId = await createShowcaseIntent(pool, {
         appId, actorId: users[0].id, objectKey: validated.objectKey,
