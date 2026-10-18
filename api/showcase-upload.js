@@ -5,6 +5,13 @@ import { MAX_MEDIA_BYTES, validateShowcaseMedia } from '../lib/showcase-media.js
 import { createShowcaseIntent, setShowcaseIntentState } from '../lib/showcase-intents.js';
 
 const LIMIT = MAX_MEDIA_BYTES;
+// Fail closed outside Preview unless Production is explicitly enabled.
+// An explicit false disables Preview as well.
+export function isShowcaseMediaEnabled(env = process.env) {
+  if (env.VERCEL_ENV === 'preview') return env.SHOWCASE_MEDIA_ENABLED !== 'false';
+  if (env.VERCEL_ENV === 'production') return env.SHOWCASE_MEDIA_ENABLED === 'true';
+  return false;
+}
 const deny = (status, message) => { throw Object.assign(new Error(message), { status }); };
 async function boundedBody(req) {
   const chunks = [];
@@ -22,6 +29,7 @@ export function createShowcaseUploadHandler({ poolProvider = getPool, store = st
     res.setHeader('X-Content-Type-Options', 'nosniff');
     let stage = 'request_validation';
     try {
+      if (!isShowcaseMediaEnabled(process.env)) deny(404, 'Not found.');
       if (req.method !== 'POST') deny(405, 'Method not allowed.');
       if (!req.headers?.host || req.headers.origin !== 'https://' + req.headers.host)
         deny(403, 'Invalid request origin.');
