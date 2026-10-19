@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createSmokeTestHandler, smokeTestEnabled } from '../api/admin-live-smoke-test.js';
+import { createSmokeTestHandler, smokeTestEnabled } from '../api/_admin-live-smoke-test.js';
 import { processPaymentEvent } from '../lib/payments.js';
 
 const live = { VERCEL_ENV: 'production', ADMIN_LIVE_SMOKE_TEST_ENABLED: 'true',
