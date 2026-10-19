@@ -33,18 +33,40 @@ export function createSmokeTestHandler({ poolProvider = getPool, stripeProvider 
         [createHash('sha256').update(token).digest('hex')],
       );
       if (!auth.rows.length) return res.status(403).json({ error: 'Administrator required.' });
+      // Reserve the single-use identity durably before any external Stripe call.
+      // If Stripe succeeds but the database write fails, retry the SAME idempotency key.
       client = await pool.connect();
       await client.query('BEGIN');
-      // A unique database index prevents additional smoke tests across all admins.
-      const inserted = await client.query(
-        `INSERT INTO hub_live_smoke_tests(actor_id) VALUES ($1)
-         ON CONFLICT DO NOTHING RETURNING id`, [auth.rows[0].id],
+      await client.query(
+        `INSERT INTO hub_live_smoke_tests(actor_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+        [auth.rows[0].id],
       );
-      if (!inserted.rows.length) {
+      const reserved = (await client.query(
+        `SELECT id,actor_id,state,checkout_url FROM hub_live_smoke_tests LIMIT 1`,
+      )).rows[0];
+      if (!reserved || reserved.actor_id !== auth.rows[0].id) {
         await client.query('ROLLBACK');
-        return res.status(409).json({ error: 'The one-time smoke test has already been used.' });
+        return res.status(403).json({ error: 'Smoke test reserved for another administrator.' });
       }
-      const id = inserted.rows[0].id;
+      await client.query('COMMIT');
+      await client.query('BEGIN');
+      const row = (await client.query(
+        `SELECT id,actor_id,state,checkout_url FROM hub_live_smoke_tests WHERE id=$1 FOR UPDATE`,
+        [reserved.id],
+      )).rows[0];
+      if (!row || row.actor_id !== auth.rows[0].id) {
+        await client.query('ROLLBACK');
+        return res.status(403).json({ error: 'Administrator required.' });
+      }
+      if (row.state === 'checkout_open') {
+        await client.query('COMMIT');
+        return res.status(200).json({ checkout_url: row.checkout_url });
+      }
+      if (row.state !== 'pending') {
+        await client.query('ROLLBACK');
+        return res.status(409).json({ error: 'The one-time smoke test has already finished.' });
+      }
+      const id = row.id;
       const session = await stripeProvider().checkout.sessions.create({
         mode: 'payment',
         line_items: [{ quantity: 1, price_data: {
@@ -56,9 +78,10 @@ export function createSmokeTestHandler({ poolProvider = getPool, stripeProvider 
         success_url: 'https://' + req.headers.host + '/admin?smoke_test=returned',
         cancel_url: 'https://' + req.headers.host + '/admin?smoke_test=cancelled',
       }, { idempotencyKey: 'ochilink-live-smoke-' + id });
+      if (!session.id || !session.url) throw new Error('INVALID_STRIPE_CHECKOUT');
       await client.query(
-        `UPDATE hub_live_smoke_tests SET stripe_session_id=$2,state='checkout_open',updated_at=now() WHERE id=$1`,
-        [id, session.id],
+        `UPDATE hub_live_smoke_tests SET stripe_session_id=$2,checkout_url=$3,state='checkout_open',updated_at=now() WHERE id=$1`,
+        [id, session.id, session.url],
       );
       await client.query(
         `INSERT INTO security_auth_logs(actor_id,event_type,metadata)
