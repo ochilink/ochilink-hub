@@ -1,3 +1,4 @@
+import { createSmokeTestHandler } from './_admin-live-smoke-test.js';
 import { featureRequest, capabilities } from '../lib/features.js';
 import { useMfa, encryptionReady } from '../lib/security.js';
 import { queueMail, flushMail } from '../lib/mail.js';
@@ -241,7 +242,9 @@ async function login(pool, req, res, body) {
     };
 }
 export function createHandler(poolProvider = getPool, stripeProvider = stripeClient) {
+    const smokeHandler = createSmokeTestHandler({ poolProvider, stripeProvider });
     return async function handler(req, res) {
+        if (req.query?.resource === 'admin-live-smoke-test') return smokeHandler(req, res);
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('X-Content-Type-Options', 'nosniff');
         try {
