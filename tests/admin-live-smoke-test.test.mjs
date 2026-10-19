@@ -72,3 +72,61 @@ test('smoke event rejects amount mismatch before any payment update', async () =
   }), /SMOKE_PAYMENT_MISMATCH/);
   assert.equal(calls.some(x => x.includes('UPDATE hub_live_smoke_tests')), false);
 });
+
+test('checkout retry after Stripe timeout reuses one reserved id and idempotency key', async () => {
+  const id = '11111111-1111-4111-8111-111111111111';
+  const actor = '22222222-2222-4222-8222-222222222222';
+  let reserved = false;
+  let open = false;
+  let attempts = 0;
+  const keys = [];
+  const queries = [];
+  const client = {
+    async query(sql) {
+      queries.push(sql);
+      if (sql.includes('INSERT INTO hub_live_smoke_tests')) reserved = true;
+      if (sql.includes('FROM hub_live_smoke_tests')) return { rows: reserved ? [{
+        id, actor_id: actor, state: open ? 'checkout_open' : 'pending',
+        checkout_url: open ? 'https://checkout.stripe.com/mock' : null,
+      }] : [] };
+      if (sql.includes('UPDATE hub_live_smoke_tests')) open = true;
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const pool = {
+    async query() { return { rows: [{ id: actor }] }; },
+    async connect() { return client; },
+  };
+  const stripe = { checkout: { sessions: { async create(_payload, opts) {
+    keys.push(opts.idempotencyKey);
+    attempts++;
+    if (attempts === 1) throw new Error('Stripe timeout');
+    return { id: 'cs_live_mock', url: 'https://checkout.stripe.com/mock' };
+  } } } };
+  const handler = createSmokeTestHandler({
+    env: live, poolProvider: () => pool, stripeProvider: () => stripe,
+  });
+  const authorized = { ...req, headers: {
+    ...req.headers, cookie: 'ochi_session=' + 'a'.repeat(64),
+  } };
+  const originalError = console.error;
+  console.error = () => {};
+  try {
+    const first = response();
+    await handler(authorized, first);
+    assert.equal(first.code, 503);
+    const second = response();
+    await handler(authorized, second);
+    assert.equal(second.code, 201);
+    const third = response();
+    await handler(authorized, third);
+    assert.equal(third.code, 200);
+    assert.equal(third.body.checkout_url, second.body.checkout_url);
+    assert.equal(keys.length, 2);
+    assert.deepEqual(keys, ['ochilink-live-smoke-' + id, 'ochilink-live-smoke-' + id]);
+    assert.equal(queries.filter(x => x.includes('INSERT INTO hub_live_smoke_tests')).length, 3);
+  } finally {
+    console.error = originalError;
+  }
+});
