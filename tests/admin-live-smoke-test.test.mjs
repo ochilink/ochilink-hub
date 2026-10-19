@@ -130,3 +130,47 @@ test('checkout retry after Stripe timeout reuses one reserved id and idempotency
     console.error = originalError;
   }
 });
+
+test('duplicate webhook event is ignored without mutating any payment record', async () => {
+  const calls = [];
+  const client = { async query(sql) {
+    calls.push(sql);
+    if (sql.includes('INSERT INTO hub_payment_events')) return { rows: [] };
+    throw new Error('Duplicate event must not query payment records');
+  } };
+  await processPaymentEvent(client, {
+    id: 'evt_duplicate', type: 'checkout.session.completed',
+    data: { object: { metadata: { ochilink_smoke_test_id: '11111111-1111-4111-8111-111111111111' } } },
+  });
+  assert.equal(calls.length, 1);
+});
+
+test('one-time smoke checkout refuses another administrator after reservation', async () => {
+  const existingActor = '22222222-2222-4222-8222-222222222222';
+  const requester = '33333333-3333-4333-8333-333333333333';
+  let stripeCalls = 0;
+  const client = {
+    async query(sql) {
+      if (sql.includes('FROM hub_live_smoke_tests')) return { rows: [{
+        id: '11111111-1111-4111-8111-111111111111',
+        actor_id: existingActor, state: 'pending',
+      }] };
+      return { rows: [] };
+    },
+    release() {},
+  };
+  const pool = {
+    async query() { return { rows: [{ id: requester }] }; },
+    async connect() { return client; },
+  };
+  const handler = createSmokeTestHandler({
+    env: live, poolProvider: () => pool,
+    stripeProvider: () => { stripeCalls++; throw new Error('Stripe must not be reached'); },
+  });
+  const res = response();
+  await handler({ ...req, headers: {
+    ...req.headers, cookie: 'ochi_session=' + 'a'.repeat(64),
+  } }, res);
+  assert.equal(res.code, 403);
+  assert.equal(stripeCalls, 0);
+});
