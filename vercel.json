@@ -1,6 +1,7 @@
 
 {
   "rewrites": [
+    {"source": "/api/admin-live-smoke-test", "destination": "/api/hub?resource=admin-live-smoke-test"},
     {
       "source": "/api/auth/login",
       "destination": "/api/auth-login"
