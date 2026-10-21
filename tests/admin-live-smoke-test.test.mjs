@@ -174,3 +174,52 @@ test('one-time smoke checkout refuses another administrator after reservation', 
   assert.equal(res.code, 403);
   assert.equal(stripeCalls, 0);
 });
+
+
+test('ordinary refunds never query the smoke ledger', async () => {
+  const calls = [];
+  const client = { async query(sql) {
+    calls.push(sql);
+    if (sql.includes('INSERT INTO hub_payment_events')) return { rows: [{}] };
+    if (sql.includes('hub_live_smoke_tests')) throw new Error('Unexpected smoke ledger access');
+    if (sql.includes('FROM hub_payments')) return { rows: [{ id: 'booking', consultation_id: 'consultation' }] };
+    if (sql.includes('FROM consultations')) throw new Error('BOOKING_HANDLER_REACHED');
+    return { rows: [] };
+  } };
+  const stripe = { paymentIntents: { async retrieve() {
+    throw new Error('Known booking must not require Stripe lookup');
+  } } };
+  await assert.rejects(processPaymentEvent(client, {
+    id: 'evt_booking_refund_isolation', type: 'charge.refunded',
+    data: { object: { payment_intent: 'pi_booking', amount: 15000,
+      amount_refunded: 15000, currency: 'usd' } },
+  }, stripe), /BOOKING_HANDLER_REACHED/);
+  assert.equal(calls.some(sql => sql.includes('hub_live_smoke_tests')), false);
+});
+
+test('marked smoke refund updates only its matching ledger record', async () => {
+  const calls = [];
+  const id = '11111111-1111-4111-8111-111111111111';
+  const client = { async query(sql, args) {
+    calls.push({ sql, args });
+    if (sql.includes('INSERT INTO hub_payment_events')) return { rows: [{}] };
+    if (sql.includes('FROM hub_payments')) return { rows: [] };
+    if (sql.includes('FROM hub_live_smoke_tests')) {
+      assert.deepEqual(args, [id, 'pi_smoke_refund']);
+      return { rows: [{ id, amount_cents: 100, currency: 'usd', state: 'paid' }] };
+    }
+    return { rows: [] };
+  } };
+  const stripe = { paymentIntents: { async retrieve(intentId) {
+    assert.equal(intentId, 'pi_smoke_refund');
+    return { metadata: { ochilink_smoke_test_id: id } };
+  } } };
+  await processPaymentEvent(client, {
+    id: 'evt_smoke_refund_isolation', type: 'charge.refunded',
+    data: { object: { payment_intent: 'pi_smoke_refund', amount: 100,
+      amount_refunded: 100, currency: 'usd' } },
+  }, stripe);
+  assert.equal(calls.some(x => x.sql.includes("UPDATE hub_live_smoke_tests SET state='refunded'")), true);
+  assert.equal(calls.some(x => /UPDATE consultations|UPDATE hub_payments/.test(x.sql)), false);
+  assert.equal(calls.some(x => x.sql.includes('LIVE_SMOKE_REFUNDED')), true);
+});
