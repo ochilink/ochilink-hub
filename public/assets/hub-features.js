@@ -557,6 +557,26 @@ window.HubFeatureUI = function HubFeatureUI({
                                 setMessage('Payment link queued for delivery.');
                             }),
                         ),
+                        editor.payment_status === 'Paid' &&
+                            ['Scheduled', 'Completed'].includes(editor.status) &&
+                            button('Resend confirmation', () =>
+                                run(async () => {
+                                    const result = await api(
+                                        'email-outbox',
+                                        'POST',
+                                        {
+                                            action: 'resend-booking-confirmation',
+                                            consultation_id: editor.id,
+                                        },
+                                    );
+                                    await load();
+                                    setMessage(
+                                        result.sent
+                                            ? 'Booking confirmation resent.'
+                                            : 'Booking confirmation queued for delivery.',
+                                    );
+                                }),
+                            ),
                     ),
             ),
         ),
