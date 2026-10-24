@@ -5,6 +5,7 @@ import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
 import { createRentalCheckout, getRentalFees, rentalApplicationStatus } from '../lib/rental.js';
+import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, updateRentalApplicationStatus } from '../lib/rental-admin.js';
 import {
     currentCustomer,
     customerSessionToken,
@@ -571,6 +572,41 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             }
             if (user.role !== 'admin')
                 fail(403, 'Administrator access required.');
+            if (resource === 'rental-admin') {
+                const action = String(req.query?.action || 'list');
+                if (req.method === 'GET' && action === 'list')
+                    return res.json(await listRentalApplications(
+                        pool,
+                        String(req.query?.q || ''),
+                        String(req.query?.status || 'all'),
+                    ));
+                if (req.method === 'GET' && action === 'detail')
+                    return res.json(await rentalApplicationAdminDetail(pool, req.query?.id));
+                if (req.method === 'GET' && action === 'download') {
+                    const result = await adminRentalDocumentDownload(
+                        pool,
+                        req.query?.application_id,
+                        req.query?.document_id,
+                    );
+                    await audit(pool, user.id, 'ADMIN_RENTAL_DOCUMENT_OPENED', {
+                        application_id: req.query?.application_id,
+                        document_id: req.query?.document_id,
+                    });
+                    return res.json(result);
+                }
+                if (req.method === 'PUT' && action === 'status') {
+                    const result = await transaction(pool, (client) =>
+                        updateRentalApplicationStatus(
+                            client,
+                            user.id,
+                            body.id,
+                            String(body.status || ''),
+                        ),
+                    );
+                    return res.json({ application: result });
+                }
+                fail(400, 'Invalid rental admin action.');
+            }
             if (resource === 'admin' && req.method === 'GET') {
                 const [
                     apps,
