@@ -10,7 +10,8 @@ WITH expected(version) AS (
         ('010_full_ecosystem_catalog'),
         ('011_normalize_extra_catalog_apps'),
         ('012_inline_app_cover_images'),
-        ('013_high_res_app_cover_previews')
+        ('013_high_res_app_cover_previews'),
+        ('014_rental_application')
 ),
 applied AS (
     SELECT version, applied_at
@@ -34,7 +35,8 @@ WITH expected(version) AS (
         ('010_full_ecosystem_catalog'),
         ('011_normalize_extra_catalog_apps'),
         ('012_inline_app_cover_images'),
-        ('013_high_res_app_cover_previews')
+        ('013_high_res_app_cover_previews'),
+        ('014_rental_application')
 )
 SELECT m.version, m.applied_at
 FROM public.hub_schema_migrations m
