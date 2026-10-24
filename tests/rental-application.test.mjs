@@ -16,11 +16,14 @@ test('rental application uses encrypted persistence and server-controlled Stripe
   assert.match(rental, /Number\(app\.total_cents\) !== Number\(object\.amount_total\)/);
   assert.match(rental, /app\.currency !== object\.currency/);
   assert.match(rental, /status='submitted',payment_status='paid'/);
+  assert.match(rental, /ensureCustomerForApplication/);
   assert.match(api, /resource === 'rental'/);
   assert.match(api, /createRentalCheckout/);
   assert.match(payments, /processRentalPaymentEvent/);
   assert.match(migration, /data_encrypted TEXT NOT NULL/);
-  assert.match(migration, /rental_application_documents/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS customer_documents/);
+  assert.match(migration, /CREATE TABLE IF NOT EXISTS customer_accounts/);
+  assert.match(migration, /ADD COLUMN IF NOT EXISTS customer_id/);
   assert.doesNotMatch(rental, /Access-Control-Allow-Origin.*\*/);
 });
 
