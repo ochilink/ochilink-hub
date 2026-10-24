@@ -31,6 +31,7 @@ The repository currently contains:
 - `011_normalize_extra_catalog_apps.sql`
 - `012_inline_app_cover_images.sql`
 - `013_high_res_app_cover_previews.sql`
+- `014_rental_application.sql`
 
 Important exceptions:
 
@@ -48,6 +49,7 @@ Expected ledger entries for the currently tracked schema migrations are:
 - `011_normalize_extra_catalog_apps`
 - `012_inline_app_cover_images`
 - `013_high_res_app_cover_previews`
+- `014_rental_application`
 
 Use `database/verify_migration_history.sql` for a read-only verification.
 
@@ -130,6 +132,7 @@ A disposable restore/test database should confirm at minimum:
 - published app records are readable
 - consultation records are readable
 - booking/payment tables are structurally valid
+- rental application, fee, and document-metadata tables are structurally valid
 - security/audit tables are readable
 - no Production connection string is used by the test deployment
 
