@@ -2,7 +2,8 @@
   'use strict';
 
   const MAX_SOURCE_BYTES = 8 * 1024 * 1024;
-  const MAX_DATA_URL_LENGTH = 150000;
+  const MAX_THUMBNAIL_DATA_URL_LENGTH = 150000;
+  const MAX_PREVIEW_DATA_URL_LENGTH = 700000;
 
   function loadImage(file) {
     return new Promise((resolve, reject) => {
@@ -44,6 +45,14 @@
     return canvas.toDataURL('image/jpeg', quality);
   }
 
+  function renderWithinLimit(image, attempts, maxLength) {
+    for (const [width, height, quality] of attempts) {
+      const result = renderCover(image, width, height, quality);
+      if (result.length <= maxLength) return result;
+    }
+    return null;
+  }
+
   async function processFile(file) {
     if (!file) throw new Error('Choose an image first.');
     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type))
@@ -52,19 +61,32 @@
       throw new Error('Use an image smaller than 8 MB.');
 
     const image = await loadImage(file);
-    const attempts = [
-      [640, 360, 0.68],
-      [560, 315, 0.62],
-      [480, 270, 0.58],
-      [400, 225, 0.54],
-    ];
+    const thumbnail = renderWithinLimit(
+      image,
+      [
+        [640, 360, 0.68],
+        [560, 315, 0.62],
+        [480, 270, 0.58],
+        [400, 225, 0.54],
+      ],
+      MAX_THUMBNAIL_DATA_URL_LENGTH,
+    );
+    const preview = renderWithinLimit(
+      image,
+      [
+        [1600, 900, 0.84],
+        [1440, 810, 0.82],
+        [1280, 720, 0.82],
+        [1280, 720, 0.76],
+        [1024, 576, 0.78],
+      ],
+      MAX_PREVIEW_DATA_URL_LENGTH,
+    );
 
-    for (const [width, height, quality] of attempts) {
-      const result = renderCover(image, width, height, quality);
-      if (result.length <= MAX_DATA_URL_LENGTH) return result;
-    }
+    if (!thumbnail || !preview)
+      throw new Error('That image could not be compressed enough. Try a simpler screenshot.');
 
-    throw new Error('That image could not be compressed enough. Try a simpler screenshot.');
+    return { thumbnail, preview };
   }
 
   window.OchilinkCoverUploader = { processFile };

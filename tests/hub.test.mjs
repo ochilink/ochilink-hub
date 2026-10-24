@@ -27,6 +27,7 @@ async function request(
     body = {},
     cookie = '',
     origin = 'https://hub.test',
+    query = {},
 ) {
     const headers = {
         host: 'hub.test',
@@ -49,7 +50,7 @@ async function request(
             return res;
         },
     };
-    await handler({ method, query: { resource }, body, headers }, res);
+    await handler({ method, query: { resource, ...query }, body, headers }, res);
     return result;
 }
 before(async () => {
@@ -100,6 +101,12 @@ before(async () => {
     await db.exec(
         await readFile(
             'database/migrations/012_inline_app_cover_images.sql',
+            'utf8',
+        ),
+    );
+    await db.exec(
+        await readFile(
+            'database/migrations/013_high_res_app_cover_previews.sql',
             'utf8',
         ),
     );
@@ -297,6 +304,57 @@ test('admin app covers accept safe inline raster images and reject unsafe data p
         adminCookie,
     );
     assert.equal(unsafe.status, 400);
+
+    await request('apps', 'DELETE', { id: created.body.app.id }, adminCookie);
+});
+
+test('public cover preview endpoint returns high resolution data and falls back to the thumbnail', async () => {
+    const highRes = 'data:image/jpeg;base64,' + 'A'.repeat(180000);
+    const thumb = 'data:image/jpeg;base64,' + 'B'.repeat(24000);
+    const created = await request(
+        'apps',
+        'POST',
+        {
+            name: 'Preview app',
+            slug: 'preview-app',
+            description: '',
+            link: null,
+            cover_image_url: thumb,
+            cover_preview_image: highRes,
+            tech: ['React'],
+            status: 'Coming Soon',
+            is_published: true,
+            sort_order: 997,
+        },
+        adminCookie,
+    );
+    assert.equal(created.status, 200);
+
+    const preview = await request(
+        'cover-preview',
+        'GET',
+        {},
+        '',
+        'https://hub.test',
+        { slug: 'preview-app' },
+    );
+    assert.equal(preview.status, 200);
+    assert.equal(preview.body.preview, highRes);
+
+    await pool.query(
+        'UPDATE apps SET cover_preview_image=NULL WHERE slug=$1',
+        ['preview-app'],
+    );
+    const fallback = await request(
+        'cover-preview',
+        'GET',
+        {},
+        '',
+        'https://hub.test',
+        { slug: 'preview-app' },
+    );
+    assert.equal(fallback.status, 200);
+    assert.equal(fallback.body.preview, thumb);
 
     await request('apps', 'DELETE', { id: created.body.app.id }, adminCookie);
 });
