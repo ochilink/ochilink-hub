@@ -57,3 +57,22 @@ test('cover uploader compresses supported files to a 16:9 JPEG data URL', () => 
   assert.match(uploader, /canvas\.toDataURL\('image\/jpeg'/);
   assert.match(uploader, /MAX_DATA_URL_LENGTH = 150000/);
 });
+
+
+test('app cover images open an accessible lightbox without triggering card navigation', () => {
+  const html = fs.readFileSync(
+    new URL('../public/index.html', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(html, /cursor-zoom-in/);
+  assert.match(html, /View larger preview of \$\{h\.name\}/);
+  assert.match(html, /preventDefault\(\),T\.stopPropagation\(\)/);
+  assert.match(html, /role:"dialog"/);
+  assert.match(html, /"aria-modal":"true"/);
+  assert.match(html, /Close image preview/);
+  assert.match(html, /f\.key==="Escape"/);
+  assert.match(html, /h\.target===h\.currentTarget&&O\(null\)/);
+  assert.match(html, /document\.body\.style\.overflow="hidden"/);
+  assert.match(html, /max-h-\[82vh\]/);
+});
