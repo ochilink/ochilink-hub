@@ -13,8 +13,25 @@ body[data-hub-page] {
     --danger: #DC2626;
 }
 
-/* Landing: dark-first public experience */
-body[data-hub-page='landing'] {
+/* Landing theme tokens follow the actual React theme state. */
+body[data-hub-page='landing'] [data-theme='light'] {
+    --bg: #F8FAFC;
+    --bg-soft: #FFFFFF;
+    --surface: #FFFFFF;
+    --surface-2: #F1F5F9;
+    --text: #0F172A;
+    --text-secondary: #334155;
+    --text-dim: #475569;
+    --text-muted: #64748B;
+    --text-mute: #64748B;
+    --border: #CBD5E1;
+    --border-strong: #94A3B8;
+    --accent: #00DFAF;
+    --accent-bright: #00FFC6;
+    --accent-ink: #003D32;
+}
+
+body[data-hub-page='landing'] [data-theme='dark'] {
     --bg: #0B0F1A;
     --bg-soft: #141B2A;
     --surface: #141B2A;
@@ -125,6 +142,32 @@ body[data-hub-page] h3,
 body[data-hub-page] .card-title {
     color: var(--text, var(--page-text, inherit));
     font-weight: 650;
+}
+
+
+/* Landing light mode must override legacy text-white utility classes. */
+body[data-hub-page='landing'] [data-theme='light'] :is(h1, h2, h3, h4, h5, h6) {
+    color: var(--text) !important;
+}
+
+body[data-hub-page='landing'] [data-theme='light'] .app-card-title {
+    color: var(--text) !important;
+}
+
+body[data-hub-page='landing'] [data-theme='light'] .app-card-description {
+    color: var(--text-secondary) !important;
+}
+
+body[data-hub-page='landing'] [data-theme='light'] .app-card-footer {
+    color: var(--text-muted) !important;
+}
+
+body[data-hub-page='landing'] [data-theme='light'] :is(.text-white, [class*='text-white/']) {
+    color: var(--text) !important;
+}
+
+body[data-hub-page='landing'] [data-theme='light'] .accent-text {
+    color: transparent !important;
 }
 
 body[data-hub-page] label,
