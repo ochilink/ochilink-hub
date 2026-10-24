@@ -179,10 +179,18 @@ $('#nav').addEventListener('click',async e=>{const b=e.target.closest('button');
 let timer;$('#search').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(async()=>{state.q=$('#search').value;await loadData()},250)});
 $('#uploadBtn').addEventListener('click',()=>$('#uploadDialog').showModal());$('#newFolderBtn').addEventListener('click',()=>$('#folderDialog').showModal());document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 $('#folderForm').addEventListener('submit',async e=>{e.preventDefault();try{await request('customer-documents','folder',{method:'POST',body:{name:$('#folderName').value}});$('#folderDialog').close();$('#folderName').value='';await loadData()}catch(err){alert(err.message)}});
-$('#uploadForm').addEventListener('submit',async e=>{e.preventDefault();const file=$('#fileInput').files[0],msg=$('#uploadMsg');if(!file)return;msg.textContent='Authorizing upload…';try{
-  const begin=await request('customer-documents','begin-upload',{method:'POST',body:{filename:file.name,content_type:file.type||'application/octet-stream',byte_size:file.size,folder_id:$('#folderSelect').value||null,application_id:$('#applicationSelect').value||null}});
+function uploadContentType(file){
+  if(file.type)return file.type;
+  const ext=(file.name.split('.').pop()||'').toLowerCase();
+  return ({pdf:'application/pdf',md:'text/markdown',txt:'text/plain',jpg:'image/jpeg',jpeg:'image/jpeg',
+    png:'image/png',webp:'image/webp',zip:'application/zip',mp4:'video/mp4',
+    docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})[ext]||'application/octet-stream';
+}
+$('#uploadForm').addEventListener('submit',async e=>{e.preventDefault();const file=$('#fileInput').files[0],msg=$('#uploadMsg');if(!file)return;const contentType=uploadContentType(file);msg.textContent='Authorizing upload…';try{
+  const begin=await request('customer-documents','begin-upload',{method:'POST',body:{filename:file.name,content_type:contentType,byte_size:file.size,folder_id:$('#folderSelect').value||null,application_id:$('#applicationSelect').value||null}});
   msg.textContent='Uploading securely…';
-  const put=await fetch(begin.upload_url,{method:'PUT',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});if(!put.ok)throw new Error('The private storage upload failed.');
+  const put=await fetch(begin.upload_url,{method:'PUT',headers:{'Content-Type':contentType,'x-content-type':contentType,'x-vercel-blob-access':'private'},body:file});if(!put.ok)throw new Error('The private storage upload failed.');
   await request('customer-documents','complete-upload',{method:'POST',body:{document_id:begin.document_id,pathname:begin.pathname,etag:put.headers.get('etag')||''}});
   msg.textContent='Upload complete.';$('#fileInput').value='';setTimeout(()=>$('#uploadDialog').close(),400);await loadData();
 }catch(err){msg.textContent=err.message;msg.classList.add('error')}});
