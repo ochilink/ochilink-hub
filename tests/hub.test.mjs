@@ -91,6 +91,12 @@ before(async () => {
     );
     await db.exec(ecosystemMigration);
     await db.exec(ecosystemMigration);
+    await db.exec(
+        await readFile(
+            'database/migrations/011_normalize_extra_catalog_apps.sql',
+            'utf8',
+        ),
+    );
     const passwordHash = await bcrypt.hash('a-test-password-for-tests', 4);
     adminId = (
         await pool.query(
@@ -100,13 +106,13 @@ before(async () => {
     ).rows[0].id;
 });
 after(async () => db.close());
-test('full ecosystem catalog is repeatable, publishes 25 unique products and filters drafts', async () => {
+test('full ecosystem catalog publishes 27 unique products and filters drafts', async () => {
     await pool.query(
         "INSERT INTO apps(slug,name) VALUES ('unpublished','Private draft')",
     );
     const result = await request('public');
     assert.equal(result.status, 200);
-    assert.equal(result.body.apps.length, 25);
+    assert.equal(result.body.apps.length, 27);
     assert.ok(
         result.body.apps.every(
             (a) =>
@@ -121,7 +127,7 @@ test('full ecosystem catalog is repeatable, publishes 25 unique products and fil
     });
     assert.equal(
         new Set(result.body.apps.map((app) => app.slug)).size,
-        25,
+        27,
     );
     assert.ok(
         result.body.apps.some(
@@ -144,6 +150,22 @@ test('full ecosystem catalog is repeatable, publishes 25 unique products and fil
                 app.slug === 'ochilink-vault' &&
                 app.status === 'Live' &&
                 app.link === null,
+        ),
+    );
+    assert.ok(
+        result.body.apps.some(
+            (app) =>
+                app.slug === 'home-value' &&
+                app.sort_order === 25 &&
+                app.tech.includes('Real Estate'),
+        ),
+    );
+    assert.ok(
+        result.body.apps.some(
+            (app) =>
+                app.slug === 'real-estate-directory' &&
+                app.sort_order === 26 &&
+                app.tech.includes('React'),
         ),
     );
 });
