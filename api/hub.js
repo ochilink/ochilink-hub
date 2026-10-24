@@ -5,6 +5,22 @@ import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
 import { createRentalCheckout, getRentalFees, rentalApplicationStatus } from '../lib/rental.js';
+import {
+    currentCustomer,
+    customerSessionToken,
+    exchangeApplicationAccess,
+    exchangeMagicLink,
+    requestMagicLink,
+    setCustomerCookie,
+} from '../lib/customer.js';
+import {
+    beginUpload,
+    completeUpload,
+    createFolder as createCustomerFolder,
+    documentDownload,
+    listCustomerDocuments,
+    updateDocument,
+} from '../lib/documents.js';
 import { createHash, randomBytes, createHmac } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { getPool } from './_db.js';
@@ -371,6 +387,65 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     stripeReady() ? stripeProvider() : null,
                 );
                 return res.status(201).json(result);
+            }
+            if (resource === 'customer-auth') {
+                const action = String(req.query?.action || '');
+                if (req.method === 'POST' && action === 'request-link') {
+                    const result = await requestMagicLink(pool, body.email);
+                    await flushMail(pool, { limit: 2 });
+                    return res.json(result);
+                }
+                if (req.method === 'POST' && action === 'exchange-application') {
+                    const result = await exchangeApplicationAccess(
+                        pool,
+                        body.application_id,
+                        body.access_token,
+                    );
+                    setCustomerCookie(res, result.token, 30 * 24 * 60 * 60);
+                    return res.json({ customer: result.customer });
+                }
+                if (req.method === 'POST' && action === 'exchange-magic') {
+                    const result = await exchangeMagicLink(pool, body.magic_token);
+                    setCustomerCookie(res, result.token, 30 * 24 * 60 * 60);
+                    return res.json({ customer: result.customer });
+                }
+                const customer = await currentCustomer(pool, req);
+                if (req.method === 'GET' && action === 'session')
+                    return res.json({ customer });
+                if (req.method === 'POST' && action === 'logout') {
+                    if (customer) {
+                        await pool.query(
+                            'DELETE FROM customer_sessions WHERE token_hash=$1',
+                            [hash(customerSessionToken(req))],
+                        );
+                    }
+                    setCustomerCookie(res);
+                    return res.json({ ok: true });
+                }
+                fail(400, 'Invalid customer account action.');
+            }
+            if (resource === 'customer-documents') {
+                const customer = await currentCustomer(pool, req);
+                if (!customer) fail(401, 'Please sign in to your customer account.');
+                const action = String(req.query?.action || 'list');
+                if (req.method === 'GET' && action === 'list')
+                    return res.json(await listCustomerDocuments(
+                        pool,
+                        customer.id,
+                        String(req.query?.filter || 'all'),
+                        String(req.query?.q || ''),
+                    ));
+                if (req.method === 'GET' && action === 'download')
+                    return res.json(await documentDownload(pool, customer.id, req.query?.id));
+                if (req.method === 'POST' && action === 'folder')
+                    return res.status(201).json(await createCustomerFolder(pool, customer.id, body.name));
+                if (req.method === 'POST' && action === 'begin-upload')
+                    return res.status(201).json(await beginUpload(pool, customer.id, body));
+                if (req.method === 'POST' && action === 'complete-upload')
+                    return res.json(await completeUpload(pool, customer.id, body));
+                if (req.method === 'PUT' && action === 'document')
+                    return res.json(await updateDocument(pool, customer.id, body));
+                fail(400, 'Invalid document action.');
             }
             if (resource === 'login' && req.method === 'POST')
                 return res.json(await login(pool, req, res, body));
