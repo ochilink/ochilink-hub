@@ -1,4 +1,3 @@
-
 {
   "rewrites": [
     {"source": "/api/admin-live-smoke-test", "destination": "/api/hub?resource=admin-live-smoke-test"},
@@ -13,6 +12,10 @@
     {
       "source": "/booking",
       "destination": "/booking/index.html"
+    },
+    {
+      "source": "/account",
+      "destination": "/account/index.html"
     }
   ],
   "headers": [
