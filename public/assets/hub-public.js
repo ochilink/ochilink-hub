@@ -28,7 +28,17 @@ window.useOchilinkPublic = function useOchilinkPublic(React) {
                         desc: app.description,
                         tags: app.tech,
                         status: app.status === 'Live' ? 'live' : 'soon',
-                        link: app.link || null,
+                        production_link: app.link || null,
+                        preview_url:
+                            app.preview_enabled && app.preview_url
+                                ? app.preview_url
+                                : null,
+                        link:
+                            app.status === 'Live'
+                                ? app.link || null
+                                : app.preview_enabled && app.preview_url
+                                  ? app.preview_url
+                                  : null,
                         cover: app.cover_image_url || '',
                         icon: app.name
                             .replace(/[^A-Za-z0-9]/g, '')
