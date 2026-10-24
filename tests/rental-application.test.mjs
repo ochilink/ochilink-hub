@@ -4,7 +4,7 @@ import fs from 'node:fs';
 
 test('rental application uses encrypted persistence and server-controlled Stripe checkout', () => {
   const rental = fs.readFileSync(new URL('../lib/rental.js', import.meta.url), 'utf8');
-  const api = fs.readFileSync(new URL('../api/rental.js', import.meta.url), 'utf8');
+  const api = fs.readFileSync(new URL('../api/hub.js', import.meta.url), 'utf8');
   const payments = fs.readFileSync(new URL('../lib/payments.js', import.meta.url), 'utf8');
   const migration = fs.readFileSync(new URL('../database/migrations/014_rental_application.sql', import.meta.url), 'utf8');
 
@@ -16,7 +16,7 @@ test('rental application uses encrypted persistence and server-controlled Stripe
   assert.match(rental, /Number\(app\.total_cents\) !== Number\(object\.amount_total\)/);
   assert.match(rental, /app\.currency !== object\.currency/);
   assert.match(rental, /status='submitted',payment_status='paid'/);
-  assert.match(api, /sameOrigin/);
+  assert.match(api, /resource === 'rental'/);
   assert.match(api, /createRentalCheckout/);
   assert.match(payments, /processRentalPaymentEvent/);
   assert.match(migration, /data_encrypted TEXT NOT NULL/);
