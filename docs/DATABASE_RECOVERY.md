@@ -32,12 +32,15 @@ The repository currently contains:
 - `012_inline_app_cover_images.sql`
 - `013_high_res_app_cover_previews.sql`
 - `014_rental_application.sql`
+- `015_activate_rental_document_apps.sql`
 
 Important exceptions:
 
 - Migration 002 is an idempotent catalog import but does not insert a row into `hub_schema_migrations`.
 - `database/008_live_smoke_test.sql` is a standalone optional smoke-test schema and is not part of the main migration folder.
 - The numbering gaps do not by themselves prove that Production is missing schema changes.
+- Migration 014 is schema-only and can be applied before feature activation.
+- Migration 015 publishes the Rental Application and Document Storage catalog cards and must run only after the new Production code is deployed and verified.
 
 Expected ledger entries for the currently tracked schema migrations are:
 
@@ -50,6 +53,7 @@ Expected ledger entries for the currently tracked schema migrations are:
 - `012_inline_app_cover_images`
 - `013_high_res_app_cover_previews`
 - `014_rental_application`
+- `015_activate_rental_document_apps`
 
 Use `database/verify_migration_history.sql` for a read-only verification.
 
