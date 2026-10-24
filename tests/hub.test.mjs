@@ -85,6 +85,12 @@ before(async () => {
             'utf8',
         ),
     );
+    const ecosystemMigration = await readFile(
+        'database/migrations/010_full_ecosystem_catalog.sql',
+        'utf8',
+    );
+    await db.exec(ecosystemMigration);
+    await db.exec(ecosystemMigration);
     const passwordHash = await bcrypt.hash('a-test-password-for-tests', 4);
     adminId = (
         await pool.query(
@@ -94,13 +100,13 @@ before(async () => {
     ).rows[0].id;
 });
 after(async () => db.close());
-test('catalog import is repeatable, excludes fitness and filters unpublished records', async () => {
+test('full ecosystem catalog is repeatable, publishes 25 unique products and filters drafts', async () => {
     await pool.query(
         "INSERT INTO apps(slug,name) VALUES ('unpublished','Private draft')",
     );
     const result = await request('public');
     assert.equal(result.status, 200);
-    assert.equal(result.body.apps.length, 12);
+    assert.equal(result.body.apps.length, 25);
     assert.ok(
         result.body.apps.every(
             (a) =>
@@ -113,6 +119,33 @@ test('catalog import is repeatable, excludes fitness and filters unpublished rec
         minimum: 150,
         currency: 'USD',
     });
+    assert.equal(
+        new Set(result.body.apps.map((app) => app.slug)).size,
+        25,
+    );
+    assert.ok(
+        result.body.apps.some(
+            (app) =>
+                app.slug === 'ochilink-database-cloud' &&
+                app.tech.includes('PostgreSQL'),
+        ),
+    );
+    assert.ok(
+        result.body.apps.some(
+            (app) =>
+                app.slug === 'taxdrill-com' &&
+                app.tech.includes('FastAPI') &&
+                app.tech.includes('PostgreSQL'),
+        ),
+    );
+    assert.ok(
+        result.body.apps.some(
+            (app) =>
+                app.slug === 'ochilink-vault' &&
+                app.status === 'Live' &&
+                app.link === null,
+        ),
+    );
 });
 test('unauthenticated writes and foreign-origin login are rejected', async () => {
     assert.equal((await request('apps', 'POST')).status, 401);
