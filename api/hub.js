@@ -6,6 +6,7 @@ import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/pay
 import { reserveSlot } from '../lib/scheduling.js';
 import { createRentalCheckout, getRentalFees, rentalApplicationStatus } from '../lib/rental.js';
 import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, rentalFeeAdminSnapshot, updateRentalApplicationStatus, updateRentalFees } from '../lib/rental-admin.js';
+import { activatePreviewVersion, beginAppPreviewUpload, completeAppPreviewUpload, listAppPreviews, setPreviewEnabled } from '../lib/app-previews.js';
 import {
     currentCustomer,
     customerSessionToken,
