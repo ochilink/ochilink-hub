@@ -97,6 +97,8 @@ CREATE TABLE IF NOT EXISTS customer_documents (
     folder_id UUID REFERENCES customer_folders(id) ON DELETE SET NULL,
     pathname TEXT NOT NULL UNIQUE,
     original_name TEXT NOT NULL,
+    document_type TEXT NOT NULL DEFAULT 'other'
+        CHECK (document_type IN ('identity','income','bank_statement','employment','rental_history','other')),
     content_type TEXT NOT NULL,
     byte_size BIGINT NOT NULL CHECK (byte_size >= 0),
     etag TEXT,
@@ -108,6 +110,10 @@ CREATE TABLE IF NOT EXISTS customer_documents (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE customer_documents
+    ADD COLUMN IF NOT EXISTS document_type TEXT NOT NULL DEFAULT 'other'
+    CHECK (document_type IN ('identity','income','bank_statement','employment','rental_history','other'));
+
 CREATE INDEX IF NOT EXISTS customer_documents_customer ON customer_documents(customer_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS customer_documents_folder ON customer_documents(folder_id, created_at DESC);
 
