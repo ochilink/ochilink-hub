@@ -32,6 +32,10 @@ window.useOchilinkBooking = function (React) {
         label: id => { const slot = state.slots.find(s => s.id === id); return slot ? time(slot.starts_at) : '—'; },
         async book(values, slotId) {
             setBusy(true);
+            const loaderToken = window.OchilinkLoader?.start(
+                'Opening secure checkout…',
+                { subtext: 'Reserving your appointment' },
+            );
             try {
                 if (!token.current) {
                     token.current = [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, '0')).join('');
@@ -43,7 +47,10 @@ window.useOchilinkBooking = function (React) {
                 window.location.assign(target.href);
                 return result;
             } catch (error) { if (/finished or expired|unavailable or expired|no outstanding/.test(error.message)) { token.current = ''; sessionStorage.removeItem('ochilink-booking-token'); } await refresh(); if (token.current) throw new Error(error.message + ' Reload this page to resume your checkout.'); throw error; }
-            finally { setBusy(false); }
+            finally {
+                window.OchilinkLoader?.stop(loaderToken);
+                setBusy(false);
+            }
         },
     };
 };
