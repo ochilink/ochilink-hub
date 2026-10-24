@@ -56,5 +56,8 @@ test('important user actions use the global loader while silent refresh remains 
   assert.match(pub, /Loading availability…/);
   assert.match(pub, /Sending consultation request…/);
   assert.match(pub, /Loading payment details…/);
-  assert.doesNotMatch(admin, /setInterval\([\s\S]*OchilinkLoader/);
+  const refreshStart = admin.indexOf('const interval = setInterval(');
+  const refreshEnd = admin.indexOf('}, [user?.id]);', refreshStart);
+  const refreshBlock = admin.slice(refreshStart, refreshEnd);
+  assert.doesNotMatch(refreshBlock, /OchilinkLoader/);
 });
