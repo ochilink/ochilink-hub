@@ -12,7 +12,8 @@ WITH expected(version) AS (
         ('012_inline_app_cover_images'),
         ('013_high_res_app_cover_previews'),
         ('014_rental_application'),
-        ('015_activate_rental_document_apps')
+        ('015_activate_rental_document_apps'),
+        ('016_app_preview_library')
 ),
 applied AS (
     SELECT version, applied_at
@@ -38,7 +39,8 @@ WITH expected(version) AS (
         ('012_inline_app_cover_images'),
         ('013_high_res_app_cover_previews'),
         ('014_rental_application'),
-        ('015_activate_rental_document_apps')
+        ('015_activate_rental_document_apps'),
+        ('016_app_preview_library')
 )
 SELECT m.version, m.applied_at
 FROM public.hub_schema_migrations m
