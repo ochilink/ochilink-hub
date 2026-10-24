@@ -8,6 +8,9 @@ window.useOchilinkPublic = function useOchilinkPublic(React) {
     const [attempt, setAttempt] = React.useState(0);
     React.useEffect(() => {
         const controller = new AbortController();
+        const loaderToken = window.OchilinkLoader?.start('Loading apps & services…', {
+            subtext: 'Syncing live Ochilink data',
+        });
         setState((previous) => ({ ...previous, loading: true, error: '' }));
         fetch('/api/hub?resource=public', {
             signal: controller.signal,
@@ -46,8 +49,12 @@ window.useOchilinkPublic = function useOchilinkPublic(React) {
                         loading: false,
                         error: 'Apps are temporarily unavailable.',
                     });
-            });
-        return () => controller.abort();
+            })
+            .finally(() => window.OchilinkLoader?.stop(loaderToken));
+        return () => {
+            controller.abort();
+            window.OchilinkLoader?.stop(loaderToken);
+        };
     }, [attempt]);
     return { ...state, reload: () => setAttempt((value) => value + 1) };
 };
@@ -61,10 +68,12 @@ window.OchilinkConsultation = function OchilinkConsultation({
     const [sent, setSent] = React.useState(false);
     const [slots, setSlots] = React.useState([]);
     React.useEffect(() => {
+        const loaderToken = window.OchilinkLoader?.start('Loading availability…');
         fetch('/api/hub?resource=availability')
             .then((r) => (r.ok ? r.json() : Promise.reject()))
             .then((d) => setSlots(d.slots))
-            .catch(() => setSlots([]));
+            .catch(() => setSlots([]))
+            .finally(() => window.OchilinkLoader?.stop(loaderToken));
     }, []);
     const ref = React.useRef(null);
     React.useEffect(() => {
@@ -131,6 +140,10 @@ window.OchilinkConsultation = function OchilinkConsultation({
                         const form = event.currentTarget;
                         setBusy(true);
                         setMessage('');
+                        const loaderToken = window.OchilinkLoader?.start(
+                            'Sending consultation request…',
+                            { subtext: 'Submitting your details securely' },
+                        );
                         try {
                             const response = await fetch(
                                 '/api/hub?resource=consultations',
@@ -159,6 +172,7 @@ window.OchilinkConsultation = function OchilinkConsultation({
                                     'Unable to send your request. Please try again.',
                             );
                         } finally {
+                            window.OchilinkLoader?.stop(loaderToken);
                             setBusy(false);
                         }
                     },
@@ -248,6 +262,7 @@ window.HubVisitorTools = function HubVisitorTools({ React }) {
     const token = (location.hash.match(/^#pay=([a-f0-9]{64})$/) || [])[1];
     React.useEffect(() => {
         if (!token) return;
+        const loaderToken = window.OchilinkLoader?.start('Loading payment details…');
         fetch('/api/hub?resource=payment-details', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -258,7 +273,8 @@ window.HubVisitorTools = function HubVisitorTools({ React }) {
                 if (!r.ok) throw new Error(d.error);
                 setPayment(d);
             })
-            .catch((e) => setError(e.message));
+            .catch((e) => setError(e.message))
+            .finally(() => window.OchilinkLoader?.stop(loaderToken));
     }, []);
     React.useEffect(() => {
         if (
@@ -471,6 +487,10 @@ window.HubVisitorTools = function HubVisitorTools({ React }) {
                                       disabled: busy,
                                       onClick: async () => {
                                           setBusy(true);
+                                          const loaderToken = window.OchilinkLoader?.start(
+                                              'Opening secure checkout…',
+                                              { subtext: 'Connecting to Stripe' },
+                                          );
                                           try {
                                               const r = await fetch(
                                                       '/api/hub?resource=checkout',
@@ -501,6 +521,7 @@ window.HubVisitorTools = function HubVisitorTools({ React }) {
                                           } catch (e) {
                                               setError(e.message);
                                               setBusy(false);
+                                              window.OchilinkLoader?.stop(loaderToken);
                                           }
                                       },
                                   },
