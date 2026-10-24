@@ -27,6 +27,8 @@ test('rental admin workspace exposes review, status and private document actions
   assert.match(page, /resource','rental-admin/);
   assert.match(page, /action','status/);
   assert.match(page, /data-doc/);
+  assert.match(page, /Rental fee configuration/);
+  assert.match(page, /saveFees/);
   assert.match(page, /Main Admin/);
   assert.match(mainAdmin, /hub-rental-admin-link.js/);
   assert.match(linkScript, //admin/rentals//);
