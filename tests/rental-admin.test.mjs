@@ -32,6 +32,6 @@ test('rental admin workspace exposes review, status and private document actions
   assert.match(page, /Main Admin/);
   assert.match(mainAdmin, /hub-rental-admin-link.js/);
   assert.match(linkScript, //admin/rentals//);
-  assert.match(vercel, /"source": "\/admin\/rentals"/);
+  assert.ok(vercel.includes('"source": "/admin/rentals"'));
   assert.doesNotMatch(page, /Alex Morgan|Jamie Lee|Taylor Kim|mock/i);
 });
