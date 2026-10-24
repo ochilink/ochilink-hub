@@ -76,3 +76,20 @@ test('customer portal supports approved rental document types without demo files
   assert.match(docs, /d\.state='ready'/);
   assert.doesNotMatch(page, /1,284|Q3 Financial Report|Brand Guidelines|Customer List/);
 });
+
+
+test('rental documents are categorized and returned with application checklist data', () => {
+  const migration = fs.readFileSync(new URL('../database/migrations/014_rental_application.sql', import.meta.url), 'utf8');
+  const docs = fs.readFileSync(new URL('../lib/documents.js', import.meta.url), 'utf8');
+  const page = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+
+  assert.ok(migration.includes('document_type TEXT NOT NULL'));
+  assert.ok(migration.includes("'identity','income','bank_statement','employment','rental_history','other'"));
+  assert.ok(docs.includes('allowedDocumentTypes'));
+  assert.ok(docs.includes('application_checklists'));
+  assert.ok(docs.includes('document_type'));
+  assert.ok(page.includes('documentTypeSelect'));
+  assert.ok(page.includes('checklistFor'));
+  assert.ok(page.includes('Bank Statement'));
+  assert.ok(page.includes('Rental History'));
+});
