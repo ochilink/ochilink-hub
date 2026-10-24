@@ -37,6 +37,7 @@ test('private Blob authorizations and one-time rental account tokens stay constr
   const blob = fs.readFileSync(new URL('../lib/blob-storage.js', import.meta.url), 'utf8');
   const customer = fs.readFileSync(new URL('../lib/customer.js', import.meta.url), 'utf8');
   const migration = fs.readFileSync(new URL('../database/migrations/014_rental_application.sql', import.meta.url), 'utf8');
+  const activation = fs.readFileSync(new URL('../database/migrations/015_activate_rental_document_apps.sql', import.meta.url), 'utf8');
   const maintenance = fs.readFileSync(new URL('../api/maintenance.js', import.meta.url), 'utf8');
 
   assert.match(blob, /\.private\.blob\.vercel-storage\.com/);
