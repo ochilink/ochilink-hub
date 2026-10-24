@@ -45,26 +45,64 @@ CREATE TABLE IF NOT EXISTS rental_applications (
 CREATE INDEX IF NOT EXISTS rental_applications_email ON rental_applications(applicant_email, created_at DESC);
 CREATE INDEX IF NOT EXISTS rental_applications_status ON rental_applications(status, created_at DESC);
 
-CREATE TABLE IF NOT EXISTS rental_application_documents (
+CREATE TABLE IF NOT EXISTS customer_accounts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    application_id UUID NOT NULL REFERENCES rental_applications(id) ON DELETE CASCADE,
-    storage_key TEXT,
-    original_name TEXT NOT NULL,
-    media_type TEXT NOT NULL,
-    byte_size BIGINT NOT NULL DEFAULT 0 CHECK (byte_size >= 0),
-    category TEXT NOT NULL DEFAULT 'Other',
-    metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+    email TEXT NOT NULL UNIQUE CHECK (email = lower(trim(email))),
+    name TEXT NOT NULL DEFAULT '',
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE rental_applications
+    ADD COLUMN IF NOT EXISTS customer_id UUID REFERENCES customer_accounts(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS rental_applications_customer ON rental_applications(customer_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS customer_sessions (
+    token_hash TEXT PRIMARY KEY,
+    customer_id UUID NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
-CREATE INDEX IF NOT EXISTS rental_application_documents_app ON rental_application_documents(application_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS customer_sessions_expiry ON customer_sessions(expires_at);
 
-UPDATE apps
-SET link='https://ochilink.com/rental-application/',
-    tech=ARRAY['HTML','React','Neon PostgreSQL','Stripe','Resend'],
-    status='Live',
-    is_published=true,
-    updated_at=now()
-WHERE slug='ochilink-rental-application';
+CREATE TABLE IF NOT EXISTS customer_magic_links (
+    token_hash TEXT PRIMARY KEY,
+    customer_id UUID NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS customer_magic_links_customer ON customer_magic_links(customer_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS customer_folders (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+    name TEXT NOT NULL CHECK (length(trim(name)) BETWEEN 1 AND 80),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(customer_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS customer_documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    customer_id UUID NOT NULL REFERENCES customer_accounts(id) ON DELETE CASCADE,
+    application_id UUID REFERENCES rental_applications(id) ON DELETE SET NULL,
+    folder_id UUID REFERENCES customer_folders(id) ON DELETE SET NULL,
+    pathname TEXT NOT NULL UNIQUE,
+    original_name TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    byte_size BIGINT NOT NULL CHECK (byte_size >= 0),
+    etag TEXT,
+    state TEXT NOT NULL DEFAULT 'pending' CHECK (state IN ('pending','ready','deleted')),
+    starred BOOLEAN NOT NULL DEFAULT false,
+    shared BOOLEAN NOT NULL DEFAULT false,
+    uploaded_at TIMESTAMPTZ,
+    trashed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS customer_documents_customer ON customer_documents(customer_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS customer_documents_folder ON customer_documents(folder_id, created_at DESC);
 
 INSERT INTO hub_schema_migrations(version) VALUES ('014_rental_application')
 ON CONFLICT (version) DO NOTHING;
