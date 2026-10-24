@@ -106,6 +106,22 @@ CREATE TABLE IF NOT EXISTS customer_documents (
 CREATE INDEX IF NOT EXISTS customer_documents_customer ON customer_documents(customer_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS customer_documents_folder ON customer_documents(folder_id, created_at DESC);
 
+UPDATE apps
+SET link='https://ochilink.com/rental-application/',
+    tech=ARRAY['HTML','React','Neon PostgreSQL','Stripe','Resend'],
+    status='Live',
+    is_published=true,
+    updated_at=now()
+WHERE slug='ochilink-rental-application';
+
+UPDATE apps
+SET link='https://ochilink.com/account/',
+    tech=ARRAY['HTML','JavaScript','Neon PostgreSQL','Vercel Blob','Resend'],
+    status='Live',
+    is_published=true,
+    updated_at=now()
+WHERE slug='ochilink-document-storage';
+
 INSERT INTO hub_schema_migrations(version) VALUES ('014_rental_application')
 ON CONFLICT (version) DO NOTHING;
 
