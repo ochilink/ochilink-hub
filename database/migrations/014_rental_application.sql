@@ -58,6 +58,14 @@ CREATE TABLE IF NOT EXISTS rental_application_documents (
 );
 CREATE INDEX IF NOT EXISTS rental_application_documents_app ON rental_application_documents(application_id, created_at DESC);
 
+UPDATE apps
+SET link='https://ochilink.com/rental-application/',
+    tech=ARRAY['HTML','React','Neon PostgreSQL','Stripe','Resend'],
+    status='Live',
+    is_published=true,
+    updated_at=now()
+WHERE slug='ochilink-rental-application';
+
 INSERT INTO hub_schema_migrations(version) VALUES ('014_rental_application')
 ON CONFLICT (version) DO NOTHING;
 
