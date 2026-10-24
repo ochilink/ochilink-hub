@@ -20,6 +20,10 @@ export default async function handler(req, res) {
         if (stripeReady()) await reconcileBookingPayments(pool);
         const mail = await flushMail(pool, { limit: 5 });
         await pool.query('DELETE FROM hub_sessions WHERE expires_at<now()');
+        await pool.query('DELETE FROM customer_sessions WHERE expires_at<now()');
+        await pool.query(
+            "DELETE FROM customer_magic_links WHERE expires_at<now()-interval '1 day' OR used_at<now()-interval '1 day'",
+        );
         await pool.query(
             "DELETE FROM hub_rate_limits WHERE window_start<now()-interval '2 days'",
         );
