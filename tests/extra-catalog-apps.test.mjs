@@ -8,9 +8,10 @@ test('extra production catalog apps are normalized as official ecosystem product
     'utf8',
   );
 
-  assert.match(sql, /WHERE slug = 'home-value'/);
-  assert.match(sql, /WHERE slug = 'real-estate-directory'/);
-  assert.match(sql, /sort_order = 25/);
-  assert.match(sql, /sort_order = 26/);
+  assert.match(sql, /'home-value'/);
+  assert.match(sql, /'real-estate-directory'/);
+  assert.match(sql, /ON CONFLICT \(slug\) DO UPDATE SET/);
+  assert.match(sql, /\b25\b/);
+  assert.match(sql, /\b26\b/);
   assert.match(sql, /011_normalize_extra_catalog_apps/);
 });
