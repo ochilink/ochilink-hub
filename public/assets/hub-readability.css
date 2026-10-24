@@ -1,0 +1,230 @@
+/*
+ * Ochilink readability theme
+ * Improves contrast in dark/light modes without changing layout or branding.
+ */
+
+/* Shared semantic tokens */
+body[data-hub-page] {
+    --accent: #00DFAF;
+    --accent-bright: #00FFC6;
+    --accent-ink: #003D32;
+    --success: #059669;
+    --warning: #D97706;
+    --danger: #DC2626;
+}
+
+/* Landing: dark-first public experience */
+body[data-hub-page='landing'] {
+    --bg: #0B0F1A;
+    --bg-soft: #141B2A;
+    --surface: #141B2A;
+    --surface-2: #1B2536;
+    --text: #F8FAFC;
+    --text-secondary: #E2E8F0;
+    --text-dim: #CBD5E1;
+    --text-muted: #CBD5E1;
+    --text-mute: #94A3B8;
+    --border: #334155;
+    --border-strong: #475569;
+    --accent: #00FFC6;
+    --accent-bright: #5FFFE0;
+    --accent-ink: #002E26;
+}
+
+/* Booking: dark mode default */
+body[data-hub-page='booking'] {
+    --page-bg: #0B0F1A;
+    --page-bg-soft: #141B2A;
+    --page-text: #F8FAFC;
+    --page-muted: #CBD5E1;
+    --card-bg: #141B2A;
+    --card-text: #F8FAFC;
+    --card-muted: #CBD5E1;
+    --card-border: #334155;
+    --line: #334155;
+    --line-strong: #475569;
+    --accent: #00FFC6;
+    --accent-bright: #5FFFE0;
+    --accent-ink: #002E26;
+}
+
+/* Booking light mode */
+body[data-hub-page='booking'] .light,
+body[data-hub-page='booking'].light,
+.light body[data-hub-page='booking'] {
+    --page-bg: #F8FAFC;
+    --page-bg-soft: #FFFFFF;
+    --page-text: #0F172A;
+    --page-muted: #475569;
+    --card-bg: #FFFFFF;
+    --card-text: #0F172A;
+    --card-muted: #475569;
+    --card-border: #CBD5E1;
+    --line: #CBD5E1;
+    --line-strong: #94A3B8;
+    --accent: #00DFAF;
+    --accent-bright: #00FFC6;
+    --accent-ink: #003D32;
+}
+
+/* Admin light mode */
+body[data-hub-page='admin'] {
+    --bg: #F8FAFC;
+    --bg-elevated: #FFFFFF;
+    --bg-elevated-2: #F1F5F9;
+    --text: #0F172A;
+    --text-secondary: #334155;
+    --text-muted: #64748B;
+    --text-faint: #64748B;
+    --border: #CBD5E1;
+    --border-strong: #94A3B8;
+    --surface: #FFFFFF;
+    --sidebar: #0B0F1A;
+    --sidebar-text: #F8FAFC;
+    --sidebar-muted: #CBD5E1;
+    --lime: #00DFAF;
+    --lime-ink: #003D32;
+}
+
+/* Admin dark mode */
+[data-theme='dark'] body[data-hub-page='admin'],
+body[data-hub-page='admin'][data-theme='dark'] {
+    --bg: #0B0F1A;
+    --bg-elevated: #141B2A;
+    --bg-elevated-2: #1B2536;
+    --text: #F8FAFC;
+    --text-secondary: #E2E8F0;
+    --text-muted: #CBD5E1;
+    --text-faint: #94A3B8;
+    --border: #334155;
+    --border-strong: #475569;
+    --surface: #141B2A;
+    --sidebar: #080C16;
+    --sidebar-text: #F8FAFC;
+    --sidebar-muted: #CBD5E1;
+    --lime: #00FFC6;
+    --lime-ink: #002E26;
+}
+
+/* Stronger hierarchy */
+body[data-hub-page] h1,
+body[data-hub-page] .page-title,
+body[data-hub-page] .hero-title {
+    color: var(--text, var(--page-text, inherit));
+    font-weight: 800;
+    letter-spacing: -0.025em;
+}
+
+body[data-hub-page] h2,
+body[data-hub-page] .section-title {
+    color: var(--text, var(--page-text, inherit));
+    font-weight: 700;
+}
+
+body[data-hub-page] h3,
+body[data-hub-page] .card-title {
+    color: var(--text, var(--page-text, inherit));
+    font-weight: 650;
+}
+
+body[data-hub-page] label,
+body[data-hub-page] .nav-label,
+body[data-hub-page] .form-label {
+    font-weight: 600;
+}
+
+/* Improve form legibility without changing dimensions */
+body[data-hub-page] input,
+body[data-hub-page] select,
+body[data-hub-page] textarea {
+    font-weight: 500;
+}
+
+body[data-hub-page='admin'] input,
+body[data-hub-page='admin'] select,
+body[data-hub-page='admin'] textarea {
+    background: var(--bg-elevated);
+    color: var(--text);
+    border-color: var(--border-strong);
+}
+
+body[data-hub-page='booking'] input,
+body[data-hub-page='booking'] select,
+body[data-hub-page='booking'] textarea {
+    background: var(--card-bg);
+    color: var(--card-text);
+    border-color: var(--line-strong);
+}
+
+body[data-hub-page] input::placeholder,
+body[data-hub-page] textarea::placeholder {
+    opacity: 1;
+}
+
+body[data-hub-page='admin'] input::placeholder,
+body[data-hub-page='admin'] textarea::placeholder {
+    color: var(--text-muted);
+}
+
+body[data-hub-page='booking'] input::placeholder,
+body[data-hub-page='booking'] textarea::placeholder {
+    color: var(--card-muted);
+}
+
+/* Clearer focus state */
+body[data-hub-page] input:focus,
+body[data-hub-page] select:focus,
+body[data-hub-page] textarea:focus {
+    border-color: var(--accent);
+    outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    outline-offset: 1px;
+}
+
+/* Primary/secondary reusable buttons */
+body[data-hub-page] .btn-primary {
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-weight: 700;
+}
+
+body[data-hub-page='admin'] .btn-secondary {
+    background: var(--bg-elevated-2);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    font-weight: 600;
+}
+
+body[data-hub-page='booking'] .btn-secondary {
+    background: var(--page-bg-soft);
+    color: var(--page-text);
+    border: 1px solid var(--line-strong);
+    font-weight: 600;
+}
+
+/* Keep muted copy readable */
+body[data-hub-page='admin'] :is(.muted, .helper-text, .meta) {
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+body[data-hub-page='booking'] :is(.muted, .helper-text, .meta) {
+    color: var(--page-muted);
+    font-weight: 500;
+}
+
+/* Make card separation more visible where generic card classes exist */
+body[data-hub-page='admin'] .card {
+    background: var(--bg-elevated);
+    color: var(--text);
+    border-color: var(--border);
+}
+
+body[data-hub-page='booking'] .card {
+    background: var(--card-bg);
+    color: var(--card-text);
+    border-color: var(--card-border);
+}
+
+body[data-hub-page] .card:hover {
+    border-color: var(--border-strong, var(--line-strong));
+}
