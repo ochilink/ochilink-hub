@@ -44,6 +44,11 @@ CREATE TABLE IF NOT EXISTS rental_applications (
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE rental_applications
+    ADD COLUMN IF NOT EXISTS access_token_expires_at TIMESTAMPTZ NOT NULL DEFAULT (now()+interval '1 day');
+ALTER TABLE rental_applications
+    ADD COLUMN IF NOT EXISTS access_token_used_at TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS rental_applications_email ON rental_applications(applicant_email, created_at DESC);
 CREATE INDEX IF NOT EXISTS rental_applications_status ON rental_applications(status, created_at DESC);
 
