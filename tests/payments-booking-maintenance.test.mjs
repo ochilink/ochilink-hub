@@ -18,7 +18,7 @@ test('payments and booking maintenance baseline preserves core safeguards', () =
   assert.match(payments, /payment\.currency !== object\.currency/);
   assert.match(payments, /reconcileBookingPayments/);
   assert.match(payments, /state='pending'/);
-  assert.match(payments, /status='Scheduled'/);
+  assert.match(payments, /THEN 'Scheduled' ELSE status END/);
   assert.match(payments, /PAYMENT_REQUIRES_REVIEW/);
 
   assert.match(webhook, /constructEvent/);
