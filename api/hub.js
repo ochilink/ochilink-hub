@@ -279,7 +279,6 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             if (!['GET', 'POST', 'PUT', 'DELETE'].includes(req.method))
                 fail(405, 'Method not allowed.');
             const resource = req.query?.resource || 'public';
-            const resource = req.query?.resource || 'public';
             const requestSizeLimit =
                 resource === 'apps' && ['POST', 'PUT'].includes(req.method)
                     ? 180000
