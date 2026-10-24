@@ -104,6 +104,14 @@
         <input id="fileInput" class="field" type="file" required>
         <select id="folderSelect" class="field"><option value="">No folder</option></select>
         <select id="applicationSelect" class="field"><option value="">No application</option></select>
+        <select id="documentTypeSelect" class="field">
+          <option value="identity">Identity</option>
+          <option value="income">Income</option>
+          <option value="bank_statement">Bank Statement</option>
+          <option value="employment">Employment</option>
+          <option value="rental_history">Rental History</option>
+          <option value="other" selected>Other</option>
+        </select>
       </div>
       <div id="uploadMsg" class="notice"></div>
       <div class="modalactions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" type="submit">Upload</button></div>
@@ -125,6 +133,8 @@ const $ = (s) => document.querySelector(s);
 const authView=$('#authView'), vaultView=$('#vaultView'), filesBody=$('#filesBody');
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
 function bytes(v){v=Number(v||0); if(v<1024)return v+' B'; if(v<1048576)return (v/1024).toFixed(1)+' KB'; if(v<1073741824)return (v/1048576).toFixed(1)+' MB'; return (v/1073741824).toFixed(1)+' GB'}
+const checklistTypes=[['identity','Identity'],['income','Income'],['bank_statement','Bank Statement'],['employment','Employment'],['rental_history','Rental History'],['other','Other']];
+function checklistFor(applicationId){const rows=(state.data.application_checklists||[]).filter(x=>x.application_id===applicationId);const counts=Object.fromEntries(rows.map(x=>[x.document_type,Number(x.file_count||0)]));return '<div class="small" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+checklistTypes.map(([k,label])=>'<span class="tag '+(counts[k]?'':'pending')+'">'+esc(label)+': '+(counts[k]?'✓ '+counts[k]:'—')+'</span>').join('')+'</div>'}
 async function request(resource, action, options={}){
   const u=new URL(api,location.origin);u.searchParams.set('resource',resource);if(action)u.searchParams.set('action',action);
   for(const [k,v] of Object.entries(options.query||{})) if(v!==''&&v!=null)u.searchParams.set(k,v);
@@ -159,7 +169,7 @@ function render(){
   const d=state.data;$('#fileCount').textContent=d.documents.length;$('#folderCount').textContent=d.folders.length;$('#appCount').textContent=d.applications.length;
   $('#folders').innerHTML=d.folders.length?d.folders.map(f=>`<div class="card"><div class="foldertitle">📁 ${esc(f.name)}</div><div class="count">${f.file_count} file${Number(f.file_count)===1?'':'s'}</div></div>`).join(''):'<div class="small">No folders yet.</div>';
   filesBody.innerHTML=d.documents.map(x=>`<tr>
-    <td><div class="file">${esc(x.original_name)}</div><div class="small">${esc(x.content_type)}</div></td>
+    <td><div class="file">${esc(x.original_name)}</div><div class="small">${esc(x.document_type||'other')} · ${esc(x.content_type)}</div></td>
     <td>${esc(x.folder_name||'—')}</td><td>${bytes(x.byte_size)}</td>
     <td>${x.uploaded_at?new Date(x.uploaded_at).toLocaleDateString():'Pending'}</td>
     <td><div class="actions">
@@ -168,7 +178,7 @@ function render(){
       ${x.state!=='ready'?'<span class="tag pending">Pending</span>':''}
     </div></td></tr>`).join('');
   $('#emptyFiles').classList.toggle('hidden',d.documents.length>0);
-  $('#applications').innerHTML=d.applications.map(a=>`<div class="app"><div><div class="appname">${esc(a.property_address||'Rental application')}</div><div class="small">Reference: ${esc(a.id)}</div></div><div style="text-align:right"><div class="status">${esc(a.status)}</div><div class="small">${a.submitted_at?new Date(a.submitted_at).toLocaleDateString():'Not submitted'}</div></div></div>`).join('');
+  $('#applications').innerHTML=d.applications.map(a=>`<div class="app"><div style="flex:1"><div class="appname">${esc(a.property_address||'Rental application')}</div><div class="small">Reference: ${esc(a.id)}</div>${checklistFor(a.id)}</div><div style="text-align:right"><div class="status">${esc(a.status)}</div><div class="small">${a.submitted_at?new Date(a.submitted_at).toLocaleDateString():'Not submitted'}</div></div></div>`).join('');
   $('#emptyApps').classList.toggle('hidden',d.applications.length>0);
   $('#folderSelect').innerHTML='<option value="">No folder</option>'+d.folders.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('');
   $('#applicationSelect').innerHTML='<option value="">No application</option>'+d.applications.map(a=>`<option value="${a.id}">${esc(a.property_address||a.id)}</option>`).join('');
@@ -188,7 +198,7 @@ function uploadContentType(file){
     xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})[ext]||'application/octet-stream';
 }
 $('#uploadForm').addEventListener('submit',async e=>{e.preventDefault();const file=$('#fileInput').files[0],msg=$('#uploadMsg');if(!file)return;const contentType=uploadContentType(file);msg.textContent='Authorizing upload…';try{
-  const begin=await request('customer-documents','begin-upload',{method:'POST',body:{filename:file.name,content_type:contentType,byte_size:file.size,folder_id:$('#folderSelect').value||null,application_id:$('#applicationSelect').value||null}});
+  const begin=await request('customer-documents','begin-upload',{method:'POST',body:{filename:file.name,content_type:contentType,byte_size:file.size,folder_id:$('#folderSelect').value||null,application_id:$('#applicationSelect').value||null,document_type:$('#documentTypeSelect').value||'other'}});
   msg.textContent='Uploading securely…';
   const put=await fetch(begin.upload_url,{method:'PUT',headers:{'Content-Type':contentType,'x-content-type':contentType,'x-vercel-blob-access':'private'},body:file});if(!put.ok)throw new Error('The private storage upload failed.');
   const blob=await put.json();if(blob.pathname!==begin.pathname)throw new Error('Storage returned an unexpected document path.');
