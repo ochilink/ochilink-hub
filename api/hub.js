@@ -83,6 +83,24 @@ function appInput(body) {
         )
             fail(400, 'Enter a valid HTTPS link.');
     }
+    const coverImageUrl = body.cover_image_url
+        ? text(body.cover_image_url, 2048)
+        : null;
+    if (coverImageUrl) {
+        let imageUrl;
+        try {
+            imageUrl = new URL(coverImageUrl);
+        } catch {
+            fail(400, 'Enter a valid HTTPS cover image URL.');
+        }
+        if (
+            imageUrl.protocol !== 'https:' ||
+            !imageUrl.hostname ||
+            imageUrl.username ||
+            imageUrl.password
+        )
+            fail(400, 'Enter a valid HTTPS cover image URL.');
+    }
     if (!['Live', 'Coming Soon'].includes(body.status))
         fail(400, 'Invalid status.');
     if (
@@ -107,6 +125,7 @@ function appInput(body) {
         body.status,
         body.is_published,
         body.sort_order,
+        coverImageUrl,
     ];
 }
 async function audit(client, actor, event, metadata = {}) {
@@ -271,7 +290,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             const pool = poolProvider();
             if (resource === 'public' && req.method === 'GET') {
                 const apps = await pool.query(
-                    'SELECT id,slug,name,description,link,tech,status,sort_order FROM apps WHERE is_published ORDER BY sort_order,name',
+                    'SELECT id,slug,name,description,link,tech,status,sort_order,cover_image_url FROM apps WHERE is_published ORDER BY sort_order,name',
                 );
                 const pricing = await pool.query(
                     "SELECT value FROM site_settings WHERE key='consultation_pricing'",
@@ -470,13 +489,13 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     const result =
                         req.method === 'POST'
                             ? await client.query(
-                                  `INSERT INTO apps (slug,name,description,link,tech,status,is_published,sort_order)
-                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+                                  `INSERT INTO apps (slug,name,description,link,tech,status,is_published,sort_order,cover_image_url)
+                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
                                   input,
                               )
                             : await client.query(
                                   `UPDATE apps SET slug=$1,name=$2,description=$3,link=$4,tech=$5,status=$6,
-                        is_published=$7,sort_order=$8,updated_at=now() WHERE id=$9 RETURNING *`,
+                        is_published=$7,sort_order=$8,cover_image_url=$9,updated_at=now() WHERE id=$10 RETURNING *`,
                                   [...input, body.id],
                               );
                     if (!result.rowCount) fail(404, 'App not found.');
