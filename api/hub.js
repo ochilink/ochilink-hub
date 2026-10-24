@@ -342,7 +342,15 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             const pool = poolProvider();
             if (resource === 'public' && req.method === 'GET') {
                 const apps = await pool.query(
-                    'SELECT id,slug,name,description,link,tech,status,sort_order,cover_image_url FROM apps WHERE is_published ORDER BY sort_order,name',
+                    `SELECT a.id,a.slug,a.name,a.description,a.link,a.tech,a.status,a.sort_order,a.cover_image_url,
+                            a.preview_enabled,p.public_url AS preview_url,p.version AS preview_version
+                     FROM apps a
+                     LEFT JOIN LATERAL (
+                       SELECT public_url,version FROM app_previews
+                       WHERE app_id=a.id AND state='ready' AND is_active
+                       ORDER BY version DESC LIMIT 1
+                     ) p ON true
+                     WHERE a.is_published ORDER BY a.sort_order,a.name`,
                 );
                 const pricing = await pool.query(
                     "SELECT value FROM site_settings WHERE key='consultation_pricing'",
@@ -619,7 +627,17 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     activity,
                     totals,
                 ] = await Promise.all([
-                    pool.query('SELECT id,slug,name,description,link,tech,status,is_published,sort_order,cover_image_url,(cover_preview_image IS NOT NULL) AS has_cover_preview,created_at,updated_at FROM apps ORDER BY sort_order,name'),
+                    pool.query(`SELECT a.id,a.slug,a.name,a.description,a.link,a.tech,a.status,a.is_published,a.sort_order,
+                               a.cover_image_url,(a.cover_preview_image IS NOT NULL) AS has_cover_preview,
+                               a.preview_enabled,p.public_url AS preview_url,p.version AS preview_version,
+                               a.created_at,a.updated_at
+                        FROM apps a
+                        LEFT JOIN LATERAL (
+                          SELECT public_url,version FROM app_previews
+                          WHERE app_id=a.id AND state='ready' AND is_active
+                          ORDER BY version DESC LIMIT 1
+                        ) p ON true
+                        ORDER BY a.sort_order,a.name`),
                     pool.query(
                         'SELECT id,email,name,role,is_active,failed_attempts,locked_until,created_at FROM users ORDER BY created_at DESC LIMIT 200',
                     ),
