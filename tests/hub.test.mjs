@@ -27,6 +27,7 @@ async function request(
     body = {},
     cookie = '',
     origin = 'https://hub.test',
+    query = {},
 ) {
     const headers = {
         host: 'hub.test',
@@ -49,7 +50,7 @@ async function request(
             return res;
         },
     };
-    await handler({ method, query: { resource }, body, headers }, res);
+    await handler({ method, query: { resource, ...query }, body, headers }, res);
     return result;
 }
 before(async () => {
@@ -329,17 +330,31 @@ test('public cover preview endpoint returns high resolution data and falls back 
     );
     assert.equal(created.status, 200);
 
-    const preview = await request('cover-preview', 'GET', {}, '', 'https://hub.test');
-    preview.body = preview.body || {};
-    // Query helpers in this test harness do not pass slug separately, so verify persistence directly.
-    const saved = (
-        await pool.query(
-            'SELECT cover_image_url,cover_preview_image FROM apps WHERE slug=$1',
-            ['preview-app'],
-        )
-    ).rows[0];
-    assert.equal(saved.cover_image_url, thumb);
-    assert.equal(saved.cover_preview_image, highRes);
+    const preview = await request(
+        'cover-preview',
+        'GET',
+        {},
+        '',
+        'https://hub.test',
+        { slug: 'preview-app' },
+    );
+    assert.equal(preview.status, 200);
+    assert.equal(preview.body.preview, highRes);
+
+    await pool.query(
+        'UPDATE apps SET cover_preview_image=NULL WHERE slug=$1',
+        ['preview-app'],
+    );
+    const fallback = await request(
+        'cover-preview',
+        'GET',
+        {},
+        '',
+        'https://hub.test',
+        { slug: 'preview-app' },
+    );
+    assert.equal(fallback.status, 200);
+    assert.equal(fallback.body.preview, thumb);
 
     await request('apps', 'DELETE', { id: created.body.app.id }, adminCookie);
 });
