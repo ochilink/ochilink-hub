@@ -162,6 +162,7 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
         ...app,
         desc: app.description,
         link: app.link || '',
+        cover_image_url: app.cover_image_url || '',
     }));
     const users = data.users.map((row) => ({
         ...row,
@@ -241,6 +242,7 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
             slug: app.slug,
             description: app.desc || '',
             link: app.link || null,
+            cover_image_url: app.cover_image_url || null,
             tech: (app.tech || []).filter(Boolean),
             status: app.status || 'Coming Soon',
             is_published: app.is_published ?? false,

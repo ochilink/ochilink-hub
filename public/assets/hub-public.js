@@ -26,6 +26,7 @@ window.useOchilinkPublic = function useOchilinkPublic(React) {
                         tags: app.tech,
                         status: app.status === 'Live' ? 'live' : 'soon',
                         link: app.link || '#schedule',
+                        cover: app.cover_image_url || '',
                         icon: app.name
                             .replace(/[^A-Za-z0-9]/g, '')
                             .slice(0, 2)

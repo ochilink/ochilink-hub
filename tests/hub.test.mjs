@@ -75,6 +75,12 @@ before(async () => {
     );
     await db.exec(
         await readFile(
+            'database/migrations/009_app_cover_images.sql',
+            'utf8',
+        ),
+    );
+    await db.exec(
+        await readFile(
             'database/migrations/002_import_public_catalog.sql',
             'utf8',
         ),
@@ -160,6 +166,7 @@ test('admin app CRUD persists, controls publication and audits writes', async ()
         slug: 'test-app',
         description: 'Saved record',
         link: 'https://example.test',
+        cover_image_url: 'https://images.example.test/test-app.webp',
         tech: ['React'],
         status: 'Coming Soon',
         is_published: false,
@@ -178,7 +185,10 @@ test('admin app CRUD persists, controls publication and audits writes', async ()
     assert.equal(updated.status, 200);
     assert.ok(
         (await request('public')).body.apps.some(
-            (a) => a.id === id && a.status === 'Live',
+            (a) =>
+                a.id === id &&
+                a.status === 'Live' &&
+                a.cover_image_url === 'https://images.example.test/test-app.webp',
         ),
     );
     assert.equal(
@@ -206,6 +216,22 @@ test('invalid links, duplicate slugs and invalid identifiers are handled', async
         sort_order: 0,
     };
     assert.equal((await request('apps', 'POST', app, adminCookie)).status, 400);
+    assert.equal(
+        (
+            await request(
+                'apps',
+                'POST',
+                {
+                    ...app,
+                    slug: 'bad-cover',
+                    link: null,
+                    cover_image_url: 'javascript:alert(1)',
+                },
+                adminCookie,
+            )
+        ).status,
+        400,
+    );
     assert.equal(
         (
             await request(
