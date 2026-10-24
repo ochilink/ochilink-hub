@@ -391,7 +391,10 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             if (resource === 'customer-auth') {
                 const action = String(req.query?.action || '');
                 if (req.method === 'POST' && action === 'request-link') {
-                    const result = await requestMagicLink(pool, body.email);
+                    const email = text(body.email, 254).toLowerCase();
+                    await throttle(pool, `customer-link-ip:${clientIp(req)}`, 20, req, 'customer_magic_link_ip');
+                    await throttle(pool, `customer-link-email:${email}`, 6, req, 'customer_magic_link_email');
+                    const result = await requestMagicLink(pool, email);
                     await flushMail(pool, { limit: 2 });
                     return res.json(result);
                 }
@@ -419,6 +422,8 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                             [hash(customerSessionToken(req))],
                         );
                     }
+                    if (customer)
+                        await audit(pool, null, 'CUSTOMER_LOGOUT', { customer_id: customer.id });
                     setCustomerCookie(res);
                     return res.json({ ok: true });
                 }
