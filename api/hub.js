@@ -110,6 +110,17 @@ function appInput(body) {
                 fail(400, 'Enter a valid HTTPS cover image URL.');
         }
     }
+    const coverPreviewImage =
+        body.cover_preview_image === undefined || body.cover_preview_image === null
+            ? null
+            : text(body.cover_preview_image, 700000);
+    if (
+        coverPreviewImage &&
+        !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(
+            coverPreviewImage,
+        )
+    )
+        fail(400, 'Use a valid high-resolution JPG, PNG, or WebP preview.');
     if (!['Live', 'Coming Soon'].includes(body.status))
         fail(400, 'Invalid status.');
     if (
@@ -135,6 +146,7 @@ function appInput(body) {
         body.is_published,
         body.sort_order,
         coverImageUrl,
+        coverPreviewImage,
     ];
 }
 async function audit(client, actor, event, metadata = {}) {
@@ -281,7 +293,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             const resource = req.query?.resource || 'public';
             const requestSizeLimit =
                 resource === 'apps' && ['POST', 'PUT'].includes(req.method)
-                    ? 180000
+                    ? 900000
                     : 16384;
             if (req.method !== 'GET') {
                 const host = req.headers.host;
@@ -318,6 +330,22 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     apps: apps.rows,
                     pricing: pricing.rows[0]?.value || null,
                     capabilities: capabilities(),
+                });
+            }
+            if (resource === 'cover-preview' && req.method === 'GET') {
+                const slug = text(req.query?.slug || '', 160);
+                if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug))
+                    fail(400, 'Invalid app preview.');
+                const result = await pool.query(
+                    'SELECT cover_preview_image,cover_image_url FROM apps WHERE slug=$1 AND is_published LIMIT 1',
+                    [slug],
+                );
+                if (!result.rows[0]) fail(404, 'App preview not found.');
+                return res.json({
+                    preview:
+                        result.rows[0].cover_preview_image ||
+                        result.rows[0].cover_image_url ||
+                        null,
                 });
             }
             if (resource === 'login' && req.method === 'POST')
@@ -450,7 +478,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     activity,
                     totals,
                 ] = await Promise.all([
-                    pool.query('SELECT * FROM apps ORDER BY sort_order,name'),
+                    pool.query('SELECT id,slug,name,description,link,tech,status,is_published,sort_order,cover_image_url,(cover_preview_image IS NOT NULL) AS has_cover_preview,created_at,updated_at FROM apps ORDER BY sort_order,name'),
                     pool.query(
                         'SELECT id,email,name,role,is_active,failed_attempts,locked_until,created_at FROM users ORDER BY created_at DESC LIMIT 200',
                     ),
@@ -508,14 +536,20 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     const result =
                         req.method === 'POST'
                             ? await client.query(
-                                  `INSERT INTO apps (slug,name,description,link,tech,status,is_published,sort_order,cover_image_url)
-                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+                                  `INSERT INTO apps (slug,name,description,link,tech,status,is_published,sort_order,cover_image_url,cover_preview_image)
+                        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
                                   input,
                               )
                             : await client.query(
                                   `UPDATE apps SET slug=$1,name=$2,description=$3,link=$4,tech=$5,status=$6,
-                        is_published=$7,sort_order=$8,cover_image_url=$9,updated_at=now() WHERE id=$10 RETURNING *`,
-                                  [...input, body.id],
+                        is_published=$7,sort_order=$8,cover_image_url=$9,
+                        cover_preview_image=CASE
+                            WHEN $11::boolean THEN NULL
+                            WHEN $10::text IS NOT NULL THEN $10
+                            ELSE cover_preview_image
+                        END,
+                        updated_at=now() WHERE id=$12 RETURNING *`,
+                                  [...input, !!body.remove_cover_preview, body.id],
                               );
                     if (!result.rowCount) fail(404, 'App not found.');
                     await audit(
