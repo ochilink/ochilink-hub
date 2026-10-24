@@ -191,7 +191,8 @@ $('#uploadForm').addEventListener('submit',async e=>{e.preventDefault();const fi
   const begin=await request('customer-documents','begin-upload',{method:'POST',body:{filename:file.name,content_type:contentType,byte_size:file.size,folder_id:$('#folderSelect').value||null,application_id:$('#applicationSelect').value||null}});
   msg.textContent='Uploading securely…';
   const put=await fetch(begin.upload_url,{method:'PUT',headers:{'Content-Type':contentType,'x-content-type':contentType,'x-vercel-blob-access':'private'},body:file});if(!put.ok)throw new Error('The private storage upload failed.');
-  await request('customer-documents','complete-upload',{method:'POST',body:{document_id:begin.document_id,pathname:begin.pathname,etag:put.headers.get('etag')||''}});
+  const blob=await put.json();if(blob.pathname!==begin.pathname)throw new Error('Storage returned an unexpected document path.');
+  await request('customer-documents','complete-upload',{method:'POST',body:{document_id:begin.document_id,pathname:blob.pathname,etag:blob.etag||''}});
   msg.textContent='Upload complete.';$('#fileInput').value='';setTimeout(()=>$('#uploadDialog').close(),400);await loadData();
 }catch(err){msg.textContent=err.message;msg.classList.add('error')}});
 filesBody.addEventListener('click',async e=>{const dl=e.target.closest('[data-download]');if(dl){try{const x=await request('customer-documents','download',{query:{id:dl.dataset.download}});location.href=x.url}catch(err){alert(err.message)}return}const b=e.target.closest('[data-action]');if(!b)return;try{await request('customer-documents','document',{method:'PUT',body:{id:b.dataset.id,action:b.dataset.action}});await loadData()}catch(err){alert(err.message)}});
