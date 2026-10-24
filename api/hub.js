@@ -616,6 +616,32 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                 }
                 fail(400, 'Invalid rental admin action.');
             }
+            if (resource === 'app-preview') {
+                const action = String(req.query?.action || 'list');
+                if (req.method === 'GET' && action === 'list')
+                    return res.json(await listAppPreviews(pool, req.query?.app_id || null));
+                if (req.method === 'POST' && action === 'begin-upload')
+                    return res.status(201).json(await beginAppPreviewUpload(pool, user.id, body));
+                if (req.method === 'POST' && action === 'complete-upload') {
+                    const result = await transaction(pool, (client) =>
+                        completeAppPreviewUpload(client, user.id, body),
+                    );
+                    return res.json({ preview: result });
+                }
+                if (req.method === 'PUT' && action === 'enabled') {
+                    const result = await transaction(pool, (client) =>
+                        setPreviewEnabled(client, user.id, body.app_id, !!body.enabled),
+                    );
+                    return res.json(result);
+                }
+                if (req.method === 'PUT' && action === 'activate') {
+                    const result = await transaction(pool, (client) =>
+                        activatePreviewVersion(client, user.id, body.preview_id),
+                    );
+                    return res.json(result);
+                }
+                fail(400, 'Invalid app preview action.');
+            }
             if (resource === 'admin' && req.method === 'GET') {
                 const [
                     apps,
