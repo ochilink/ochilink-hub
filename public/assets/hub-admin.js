@@ -115,6 +115,9 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
     async function login(email, password, otp) {
         setBusy(true);
         setError(null);
+        const loaderToken = window.OchilinkLoader?.start('Signing you in…', {
+            subtext: 'Securing your admin session',
+        });
         try {
             const result = await api('login', 'POST', { email, password, otp });
             if (result.mfa_required) {
@@ -129,11 +132,16 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
         } catch (error) {
             setError(error.message);
         } finally {
+            window.OchilinkLoader?.stop(loaderToken);
             setBusy(false);
         }
     }
     async function action(resource, method, body, message) {
         setBusy(true);
+        const loaderToken = window.OchilinkLoader?.start(
+            method === 'DELETE' ? 'Removing item…' : 'Saving changes…',
+            { subtext: 'Updating Ochilink' },
+        );
         try {
             await api(resource, method, body);
             await refresh();
@@ -143,11 +151,13 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
             notify(error.message);
             return false;
         } finally {
+            window.OchilinkLoader?.stop(loaderToken);
             setBusy(false);
         }
     }
     async function logout() {
         setBusy(true);
+        const loaderToken = window.OchilinkLoader?.start('Signing out…');
         try {
             await api('logout', 'POST', {});
             setUser(null);
@@ -155,6 +165,7 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
         } catch (error) {
             notify(error.message);
         } finally {
+            window.OchilinkLoader?.stop(loaderToken);
             setBusy(false);
         }
     }
