@@ -7,7 +7,7 @@ test('public app cards render cover images with a branded fallback', () => {
   const hook = fs.readFileSync(new URL('../public/assets/hub-public.js', import.meta.url), 'utf8');
 
   assert.match(hook, /cover: app\.cover_image_url \|\| ''/);
-  assert.match(html, /h\.cover\?m\("img"/);
+  assert.match(html, /h\.cover\?m\("button"/);
   assert.match(html, /loading:"lazy"/);
   assert.match(html, /group-hover:scale-\[1\.04\]/);
   assert.match(html, /radial-gradient\(circle at 20% 20%/);
