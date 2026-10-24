@@ -4,6 +4,7 @@ import { useMfa, encryptionReady } from '../lib/security.js';
 import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
+import { createRentalCheckout, getRentalFees, rentalApplicationStatus } from '../lib/rental.js';
 import { createHash, randomBytes, createHmac } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { getPool } from './_db.js';
@@ -294,7 +295,9 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             const requestSizeLimit =
                 resource === 'apps' && ['POST', 'PUT'].includes(req.method)
                     ? 900000
-                    : 16384;
+                    : resource === 'rental' && req.method === 'POST'
+                      ? 220000
+                      : 16384;
             if (req.method !== 'GET') {
                 const host = req.headers.host;
                 // Reject browser mutations without a matching Origin. No wildcard CORS.
@@ -347,6 +350,27 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                         result.rows[0].cover_image_url ||
                         null,
                 });
+            }
+            if (resource === 'rental' && req.method === 'GET') {
+                const action = String(req.query?.action || 'fees');
+                if (action === 'fees') return res.json(await getRentalFees(pool));
+                if (action === 'status')
+                    return res.json(await rentalApplicationStatus(
+                        pool,
+                        req.query?.id,
+                        req.query?.access_token,
+                    ));
+                fail(400, 'Invalid rental action.');
+            }
+            if (resource === 'rental' && req.method === 'POST') {
+                if (String(req.query?.action || '') !== 'submit')
+                    fail(400, 'Invalid rental action.');
+                const result = await createRentalCheckout(
+                    pool,
+                    body,
+                    stripeReady() ? stripeProvider() : null,
+                );
+                return res.status(201).json(result);
             }
             if (resource === 'login' && req.method === 'POST')
                 return res.json(await login(pool, req, res, body));
