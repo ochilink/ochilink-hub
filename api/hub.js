@@ -84,22 +84,31 @@ function appInput(body) {
             fail(400, 'Enter a valid HTTPS link.');
     }
     const coverImageUrl = body.cover_image_url
-        ? text(body.cover_image_url, 2048)
+        ? text(body.cover_image_url, 150000)
         : null;
     if (coverImageUrl) {
-        let imageUrl;
-        try {
-            imageUrl = new URL(coverImageUrl);
-        } catch {
-            fail(400, 'Enter a valid HTTPS cover image URL.');
+        if (coverImageUrl.startsWith('data:')) {
+            if (
+                !/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(
+                    coverImageUrl,
+                )
+            )
+                fail(400, 'Use a valid JPG, PNG, or WebP cover image.');
+        } else {
+            let imageUrl;
+            try {
+                imageUrl = new URL(coverImageUrl);
+            } catch {
+                fail(400, 'Enter a valid HTTPS cover image URL.');
+            }
+            if (
+                imageUrl.protocol !== 'https:' ||
+                !imageUrl.hostname ||
+                imageUrl.username ||
+                imageUrl.password
+            )
+                fail(400, 'Enter a valid HTTPS cover image URL.');
         }
-        if (
-            imageUrl.protocol !== 'https:' ||
-            !imageUrl.hostname ||
-            imageUrl.username ||
-            imageUrl.password
-        )
-            fail(400, 'Enter a valid HTTPS cover image URL.');
     }
     if (!['Live', 'Coming Soon'].includes(body.status))
         fail(400, 'Invalid status.');
