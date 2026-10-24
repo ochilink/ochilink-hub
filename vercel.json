@@ -17,6 +17,10 @@
       "destination": "/admin/rentals/index.html"
     },
     {
+      "source": "/admin/previews",
+      "destination": "/admin/previews/index.html"
+    },
+    {
       "source": "/booking",
       "destination": "/booking/index.html"
     },
