@@ -51,6 +51,12 @@ test('private Blob authorizations and one-time rental account tokens stay constr
   assert.match(customer, /access_token_used_at=now\(\)/);
   assert.match(migration, /access_token_expires_at/);
   assert.match(migration, /customer_documents/);
+  assert.doesNotMatch(migration, /ochilink-rental-application/);
+  assert.doesNotMatch(migration, /ochilink-document-storage/);
+  assert.match(activation, /ochilink-rental-application/);
+  assert.match(activation, /https:\/\/ochilink\.com\/rental-application\//);
+  assert.match(activation, /ochilink-document-storage/);
+  assert.match(activation, /https:\/\/ochilink\.com\/account\//);
   assert.match(maintenance, /DELETE FROM customer_sessions WHERE expires_at<now\(\)/);
   assert.match(maintenance, /DELETE FROM customer_magic_links/);
 });
