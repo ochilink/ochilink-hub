@@ -5,7 +5,7 @@ import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
 import { createRentalCheckout, getRentalFees, rentalApplicationStatus } from '../lib/rental.js';
-import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, updateRentalApplicationStatus } from '../lib/rental-admin.js';
+import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, rentalFeeAdminSnapshot, updateRentalApplicationStatus, updateRentalFees } from '../lib/rental-admin.js';
 import {
     currentCustomer,
     customerSessionToken,
