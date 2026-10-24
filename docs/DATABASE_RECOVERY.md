@@ -132,7 +132,9 @@ A disposable restore/test database should confirm at minimum:
 - published app records are readable
 - consultation records are readable
 - booking/payment tables are structurally valid
-- rental application, fee, and document-metadata tables are structurally valid
+- rental application and fee tables are structurally valid
+- customer account/session/magic-link tables are structurally valid
+- customer folder/document metadata tables are structurally valid
 - security/audit tables are readable
 - no Production connection string is used by the test deployment
 
