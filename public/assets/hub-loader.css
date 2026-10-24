@@ -1,0 +1,85 @@
+:root {
+  --ochi-loader-bg: rgba(11, 15, 26, 0.82);
+  --ochi-loader-card: rgba(17, 24, 39, 0.94);
+  --ochi-loader-text: #f8fafc;
+  --ochi-loader-muted: #94a3b8;
+  --ochi-loader-accent: #00ffc2;
+}
+
+#ochi-global-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--ochi-loader-bg);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .18s ease, visibility .18s ease;
+}
+
+#ochi-global-loader[data-visible="true"] {
+  opacity: 1;
+  visibility: visible;
+}
+
+#ochi-global-loader .ochi-loader-card {
+  min-width: 180px;
+  max-width: min(90vw, 320px);
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 22px 24px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 18px;
+  background: var(--ochi-loader-card);
+  color: var(--ochi-loader-text);
+  box-shadow: 0 20px 60px rgba(0,0,0,.28);
+  text-align: center;
+}
+
+.ochi-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(255,255,255,.16);
+  border-top-color: var(--ochi-loader-accent);
+  border-radius: 999px;
+  animation: ochi-spin .8s linear infinite;
+}
+
+.ochi-loader-label {
+  font: 600 13px/1.4 Inter, system-ui, sans-serif;
+}
+
+.ochi-loader-subtext {
+  font: 500 11px/1.4 "JetBrains Mono", ui-monospace, monospace;
+  color: var(--ochi-loader-muted);
+}
+
+.ochi-inline-spinner {
+  width: 14px;
+  height: 14px;
+  display: inline-block;
+  vertical-align: -2px;
+  margin-right: 7px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 999px;
+  animation: ochi-spin .7s linear infinite;
+}
+
+@keyframes ochi-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #ochi-global-loader {
+    transition: none;
+  }
+  .ochi-spinner,
+  .ochi-inline-spinner {
+    animation-duration: 1.8s;
+  }
+}
