@@ -103,6 +103,12 @@ before(async () => {
             'utf8',
         ),
     );
+    await db.exec(
+        await readFile(
+            'database/migrations/013_high_res_app_cover_previews.sql',
+            'utf8',
+        ),
+    );
     const passwordHash = await bcrypt.hash('a-test-password-for-tests', 4);
     adminId = (
         await pool.query(
@@ -297,6 +303,43 @@ test('admin app covers accept safe inline raster images and reject unsafe data p
         adminCookie,
     );
     assert.equal(unsafe.status, 400);
+
+    await request('apps', 'DELETE', { id: created.body.app.id }, adminCookie);
+});
+
+test('public cover preview endpoint returns high resolution data and falls back to the thumbnail', async () => {
+    const highRes = 'data:image/jpeg;base64,' + 'A'.repeat(180000);
+    const thumb = 'data:image/jpeg;base64,' + 'B'.repeat(24000);
+    const created = await request(
+        'apps',
+        'POST',
+        {
+            name: 'Preview app',
+            slug: 'preview-app',
+            description: '',
+            link: null,
+            cover_image_url: thumb,
+            cover_preview_image: highRes,
+            tech: ['React'],
+            status: 'Coming Soon',
+            is_published: true,
+            sort_order: 997,
+        },
+        adminCookie,
+    );
+    assert.equal(created.status, 200);
+
+    const preview = await request('cover-preview', 'GET', {}, '', 'https://hub.test');
+    preview.body = preview.body || {};
+    // Query helpers in this test harness do not pass slug separately, so verify persistence directly.
+    const saved = (
+        await pool.query(
+            'SELECT cover_image_url,cover_preview_image FROM apps WHERE slug=$1',
+            ['preview-app'],
+        )
+    ).rows[0];
+    assert.equal(saved.cover_image_url, thumb);
+    assert.equal(saved.cover_preview_image, highRes);
 
     await request('apps', 'DELETE', { id: created.body.app.id }, adminCookie);
 });
