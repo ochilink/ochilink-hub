@@ -97,6 +97,12 @@ before(async () => {
             'utf8',
         ),
     );
+    await db.exec(
+        await readFile(
+            'database/migrations/012_inline_app_cover_images.sql',
+            'utf8',
+        ),
+    );
     const passwordHash = await bcrypt.hash('a-test-password-for-tests', 4);
     adminId = (
         await pool.query(
@@ -259,6 +265,42 @@ test('admin app CRUD persists, controls publication and audits writes', async ()
         3,
     );
 });
+test('admin app covers accept safe inline raster images and reject unsafe data payloads', async () => {
+    const base = {
+        name: 'Inline cover',
+        slug: 'inline-cover',
+        description: '',
+        link: null,
+        tech: ['React'],
+        status: 'Coming Soon',
+        is_published: false,
+        sort_order: 999,
+    };
+    const safeCover = 'data:image/jpeg;base64,' + Buffer.from('tiny-test-image').toString('base64');
+    const created = await request(
+        'apps',
+        'POST',
+        { ...base, cover_image_url: safeCover },
+        adminCookie,
+    );
+    assert.equal(created.status, 200);
+    assert.equal(created.body.app.cover_image_url, safeCover);
+
+    const unsafe = await request(
+        'apps',
+        'POST',
+        {
+            ...base,
+            slug: 'unsafe-inline-cover',
+            cover_image_url: 'data:image/svg+xml;base64,PHN2Zz48L3N2Zz4=',
+        },
+        adminCookie,
+    );
+    assert.equal(unsafe.status, 400);
+
+    await request('apps', 'DELETE', { id: created.body.app.id }, adminCookie);
+});
+
 test('invalid links, duplicate slugs and invalid identifiers are handled', async () => {
     const app = {
         name: 'Invalid link',
