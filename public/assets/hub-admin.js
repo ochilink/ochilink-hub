@@ -174,6 +174,9 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
         desc: app.description,
         link: app.link || '',
         cover_image_url: app.cover_image_url || '',
+        cover_preview_image: '',
+        has_cover_preview: !!app.has_cover_preview,
+        remove_cover_preview: false,
     }));
     const users = data.users.map((row) => ({
         ...row,
@@ -254,6 +257,10 @@ window.useOriginalOchilinkAdmin = function useOriginalOchilinkAdmin(React) {
             description: app.desc || '',
             link: app.link || null,
             cover_image_url: app.cover_image_url || null,
+            ...(app.cover_preview_image
+                ? { cover_preview_image: app.cover_preview_image }
+                : {}),
+            remove_cover_preview: !!app.remove_cover_preview,
             tech: (app.tech || []).filter(Boolean),
             status: app.status || 'Coming Soon',
             is_published: app.is_published ?? false,
