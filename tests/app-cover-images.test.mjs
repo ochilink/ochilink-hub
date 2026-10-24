@@ -44,18 +44,22 @@ test('cover image migrations support HTTPS and safe inline raster data', () => {
   assert.match(inline, /length\(cover_image_url\) <= 150000/);
 });
 
-test('cover uploader compresses supported files to a 16:9 JPEG data URL', () => {
+test('cover uploader creates a fast thumbnail and a high-resolution 16:9 preview', () => {
   const uploader = fs.readFileSync(
     new URL('../public/assets/hub-cover-uploader.js', import.meta.url),
     'utf8',
   );
 
   assert.match(uploader, /640, 360, 0\.68/);
+  assert.match(uploader, /1600, 900, 0\.84/);
+  assert.match(uploader, /1280, 720, 0\.82/);
   assert.match(uploader, /image\/jpeg/);
   assert.match(uploader, /image\/png/);
   assert.match(uploader, /image\/webp/);
   assert.match(uploader, /canvas\.toDataURL\('image\/jpeg'/);
-  assert.match(uploader, /MAX_DATA_URL_LENGTH = 150000/);
+  assert.match(uploader, /MAX_THUMBNAIL_DATA_URL_LENGTH = 150000/);
+  assert.match(uploader, /MAX_PREVIEW_DATA_URL_LENGTH = 700000/);
+  assert.match(uploader, /return \{ thumbnail, preview \}/);
 });
 
 
@@ -75,4 +79,18 @@ test('app cover images open an accessible lightbox without triggering card navig
   assert.match(html, /h\.target===h\.currentTarget&&O\(null\)/);
   assert.match(html, /document\.body\.style\.overflow="hidden"/);
   assert.match(html, /max-h-\[82vh\]/);
+  assert.match(html, /resource=cover-preview&slug=/);
+  assert.match(html, /encodeURIComponent\(h\.slug\)/);
+});
+
+
+test('high-resolution preview migration stores previews separately from thumbnails', () => {
+  const sql = fs.readFileSync(
+    new URL('../database/migrations/013_high_res_app_cover_previews.sql', import.meta.url),
+    'utf8',
+  );
+
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS cover_preview_image TEXT/);
+  assert.match(sql, /length\(cover_preview_image\) <= 700000/);
+  assert.match(sql, /apps_cover_preview_image_safe/);
 });
