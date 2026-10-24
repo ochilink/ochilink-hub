@@ -48,9 +48,11 @@ test('live local products do not render a fake open-app link', () => {
     'utf8',
   );
 
-  assert.match(hook, /link: app\.link \|\| null/);
+  assert.match(hook, /production_link: app\.link \|\| null/);
+  assert.match(hook, /app\.preview_enabled && app\.preview_url/);
   assert.match(html, /Live locally/);
-  assert.match(html, /P=T&&!!h\.link/);
+  assert.match(html, /P=!!h\.link/);
+  assert.match(html, /View preview/);
 });
 
 test('ecosystem migration declares 25 canonical products and retires legacy duplicates', () => {
