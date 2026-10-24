@@ -1,0 +1,63 @@
+/* Global Ochilink app-card alignment.
+ * Keeps every card on the same vertical rhythm regardless of title/tag wrapping.
+ */
+
+.app-card-grid {
+    align-items: stretch;
+}
+
+.app-card-grid > * {
+    min-width: 0;
+    height: 100%;
+}
+
+.app-card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-card-meta {
+    min-height: 40px;
+    flex: 0 0 auto;
+}
+
+.app-card-title {
+    min-height: 40px;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    flex: 0 0 auto;
+}
+
+.app-card-description {
+    min-height: 40px;
+    flex: 0 0 auto;
+}
+
+.app-card-tags {
+    min-height: 58px;
+    align-content: flex-start;
+    flex: 0 0 auto;
+}
+
+.app-card-footer {
+    margin-top: auto;
+    min-height: 29px;
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+@media (max-width: 767px) {
+    .app-card-title,
+    .app-card-description,
+    .app-card-tags {
+        min-height: 0;
+    }
+
+    .app-card-footer {
+        min-height: 0;
+    }
+}
