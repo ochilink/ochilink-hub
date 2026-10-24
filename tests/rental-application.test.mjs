@@ -17,6 +17,10 @@ test('rental application uses encrypted persistence and server-controlled Stripe
   assert.match(rental, /app\.currency !== object\.currency/);
   assert.match(rental, /status='submitted',payment_status='paid'/);
   assert.match(rental, /ensureCustomerForApplication/);
+  assert.match(rental, /RENTAL_REFUND_RECORD_MISMATCH/);
+  assert.match(rental, /RENTAL_PAYMENT_REFUNDED/);
+  assert.match(payments, /event\.type === 'charge\.refunded'/);
+  assert.match(payments, /rental_application_id/);
   assert.match(api, /resource === 'rental'/);
   assert.match(api, /createRentalCheckout/);
   assert.match(payments, /processRentalPaymentEvent/);
@@ -34,4 +38,11 @@ test('rental application page is wired to Hub fees and checkout APIs', () => {
   assert.ok(page.includes('/api/hub?resource=rental&action=status'));
   assert.match(page, /hub-rental\.css/);
   assert.doesNotMatch(page, /no server call made/i);
+  assert.match(page, /Open My Account/);
+  assert.match(page, /location\.assign\("\/account\/"\)/);
+  assert.match(page, /CUSTOMER|customer-auth/);
+  assert.match(page, /payment_status===\"paid\"/);
+  assert.match(page, /history\.replaceState/);
+  assert.match(page, /Start Application/);
+  assert.doesNotMatch(page, /children:\"Start as Guest\"/);
 });
