@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My Documents | Ochilink</title>
+  <meta name="referrer" content="no-referrer">
+  <style>
+    :root{--bg:#0b0f1a;--panel:#121827;--panel2:#172033;--line:#25314a;--text:#eef4ff;--muted:#8fa0ba;--green:#00ffc6;--blue:#4da3ff;--danger:#ff6b7a}
+    *{box-sizing:border-box} body{margin:0;font-family:Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;background:var(--bg);color:var(--text)}
+    button,input,select{font:inherit}.hidden{display:none!important}.shell{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+    aside{border-right:1px solid var(--line);background:#0e1420;padding:22px 16px;position:sticky;top:0;height:100vh}.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.04em;margin-bottom:24px}.logo{width:34px;height:34px;border-radius:10px;border:1px solid #1e5b51;background:linear-gradient(145deg,#0f2e2a,#123c35);display:grid;place-items:center;color:var(--green)}
+    nav{display:grid;gap:6px}.navbtn{width:100%;border:0;background:transparent;color:var(--muted);text-align:left;padding:11px 12px;border-radius:10px;cursor:pointer}.navbtn:hover,.navbtn.active{background:#172235;color:var(--text)} .navbtn.active{box-shadow:inset 3px 0 0 var(--green)}
+    .sidefoot{position:absolute;left:16px;right:16px;bottom:18px;border-top:1px solid var(--line);padding-top:14px}.small{font-size:12px;color:var(--muted)}
+    main{min-width:0}.topbar{height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 26px;position:sticky;top:0;background:rgba(11,15,26,.94);backdrop-filter:blur(14px);z-index:3}
+    .search{flex:1;max-width:680px;background:#111a2a;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:11px 14px}.btn{border:1px solid var(--line);background:#162034;color:var(--text);padding:10px 14px;border-radius:11px;cursor:pointer}.btn:hover{border-color:#3a4e73}.primary{background:var(--green);border-color:var(--green);color:#07110f;font-weight:800}.danger{color:#ffdfe4;border-color:#5e2631;background:#29151a}
+    .content{padding:26px}.headline{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px}.headline h1{margin:0;font-size:30px}.headline p{margin:7px 0 0;color:var(--muted)}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:26px}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px}.card{padding:16px;cursor:pointer}.card:hover{border-color:#3e527a}.foldertitle{font-weight:700}.count{font-size:12px;color:var(--muted);margin-top:6px}
+    .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px}.stat{padding:15px}.stat strong{display:block;font-size:23px}.stat span{color:var(--muted);font-size:12px}
+    .panel{overflow:hidden}.panelhead{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}table{width:100%;border-collapse:collapse}th,td{padding:13px 16px;text-align:left;border-bottom:1px solid #1e2a40;font-size:13px}th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.file{font-weight:650}.actions{display:flex;gap:6px;flex-wrap:wrap}.mini{padding:6px 9px;border-radius:8px;font-size:12px}.tag{padding:4px 8px;border-radius:99px;background:#152c29;color:#7fffe2;font-size:11px}.pending{background:#302815;color:#f8d46a}.empty{padding:36px;text-align:center;color:var(--muted)}
+    .apps{display:grid;gap:10px}.app{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:14px;border-bottom:1px solid #1e2a40}.app:last-child{border-bottom:0}.appname{font-weight:700}.status{font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.08em}
+    .authwrap{min-height:100vh;display:grid;place-items:center;padding:24px}.auth{width:min(460px,100%);background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:28px}.auth h1{margin:0 0 8px}.auth p{color:var(--muted);line-height:1.5}.field{width:100%;border:1px solid var(--line);background:#0f1725;color:var(--text);border-radius:11px;padding:12px 13px;margin:10px 0}.notice{margin-top:12px;font-size:13px;color:var(--muted)}.error{color:#ff9aa5}
+    dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--text);width:min(520px,calc(100% - 30px));padding:0}dialog::backdrop{background:rgba(0,0,0,.62)}.modal{padding:22px}.row{display:grid;gap:10px;margin-top:12px}.modalactions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+    @media(max-width:900px){.shell{grid-template-columns:1fr}aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}nav{grid-template-columns:repeat(3,1fr)}.sidefoot{position:static;margin-top:14px}.cards{grid-template-columns:repeat(2,1fr)}.topbar{padding:0 14px}.content{padding:18px}}
+    @media(max-width:560px){nav{grid-template-columns:repeat(2,1fr)}.cards,.stats{grid-template-columns:1fr}.headline{display:block}.headline .primary{margin-top:14px}th:nth-child(3),td:nth-child(3){display:none}.topbar{height:auto;padding:12px;flex-wrap:wrap}.search{order:3;max-width:none;width:100%}}
+  </style>
+</head>
+<body>
+  <section id="authView" class="authwrap">
+    <div class="auth">
+      <div class="brand"><div class="logo">OL</div> OCHILINK</div>
+      <h1>Customer account</h1>
+      <p>Access your rental applications and private documents. We use secure sign-in links instead of reusable customer passwords.</p>
+      <form id="magicForm">
+        <label class="small" for="email">Email address</label>
+        <input class="field" id="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        <button class="btn primary" type="submit">Email me a sign-in link</button>
+      </form>
+      <div id="authMsg" class="notice"></div>
+    </div>
+  </section>
+
+  <section id="vaultView" class="shell hidden">
+    <aside>
+      <div class="brand"><div class="logo">OL</div> OCHILINK VAULT</div>
+      <nav id="nav">
+        <button class="navbtn active" data-filter="all">My Documents</button>
+        <button class="navbtn" data-filter="recent">Recent</button>
+        <button class="navbtn" data-filter="starred">Starred</button>
+        <button class="navbtn" data-filter="shared">Shared</button>
+        <button class="navbtn" data-view="applications">Applications</button>
+        <button class="navbtn" data-filter="trash">Trash</button>
+      </nav>
+      <div class="sidefoot">
+        <div id="customerName" style="font-weight:700"></div>
+        <div id="customerEmail" class="small"></div>
+        <button id="logoutBtn" class="navbtn" style="margin-top:8px">Sign out</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <input id="search" class="search" type="search" placeholder="Search your documents">
+        <button id="newFolderBtn" class="btn">New folder</button>
+        <button id="uploadBtn" class="btn primary">Upload file</button>
+      </div>
+      <div class="content">
+        <section id="documentsView">
+          <div class="headline">
+            <div><h1 id="pageTitle">My Documents</h1><p>Your private Ochilink document storage.</p></div>
+          </div>
+          <div class="stats">
+            <div class="card stat"><strong id="fileCount">0</strong><span>Documents</span></div>
+            <div class="card stat"><strong id="folderCount">0</strong><span>Folders</span></div>
+            <div class="card stat"><strong id="appCount">0</strong><span>Rental applications</span></div>
+          </div>
+          <h2 style="font-size:16px">Folders</h2>
+          <div id="folders" class="cards"></div>
+          <div class="panel">
+            <div class="panelhead"><strong>Files</strong><span id="filterLabel" class="small">All documents</span></div>
+            <div style="overflow:auto">
+              <table>
+                <thead><tr><th>Name</th><th>Folder</th><th>Size</th><th>Uploaded</th><th>Actions</th></tr></thead>
+                <tbody id="filesBody"></tbody>
+              </table>
+            </div>
+            <div id="emptyFiles" class="empty hidden">No documents found.</div>
+          </div>
+        </section>
+
+        <section id="applicationsView" class="hidden">
+          <div class="headline"><div><h1>My Applications</h1><p>Applications associated with this customer account.</p></div></div>
+          <div class="panel"><div id="applications" class="apps"></div><div id="emptyApps" class="empty hidden">No rental applications found.</div></div>
+        </section>
+      </div>
+    </main>
+  </section>
+
+  <dialog id="uploadDialog">
+    <form id="uploadForm" class="modal">
+      <h2 style="margin:0">Upload document</h2>
+      <p class="small">Files are uploaded directly to private storage using a short-lived signed authorization.</p>
+      <div class="row">
+        <input id="fileInput" class="field" type="file" required>
+        <select id="folderSelect" class="field"><option value="">No folder</option></select>
+        <select id="applicationSelect" class="field"><option value="">No application</option></select>
+      </div>
+      <div id="uploadMsg" class="notice"></div>
+      <div class="modalactions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" type="submit">Upload</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="folderDialog">
+    <form id="folderForm" class="modal">
+      <h2 style="margin:0">New folder</h2>
+      <input id="folderName" class="field" maxlength="80" required placeholder="Folder name">
+      <div class="modalactions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" type="submit">Create folder</button></div>
+    </form>
+  </dialog>
+
+<script>
+const api = '/api/hub';
+const state = { customer:null, filter:'all', q:'', data:{documents:[],folders:[],applications:[]} };
+const $ = (s) => document.querySelector(s);
+const authView=$('#authView'), vaultView=$('#vaultView'), filesBody=$('#filesBody');
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function bytes(v){v=Number(v||0); if(v<1024)return v+' B'; if(v<1048576)return (v/1024).toFixed(1)+' KB'; if(v<1073741824)return (v/1048576).toFixed(1)+' MB'; return (v/1073741824).toFixed(1)+' GB'}
+async function request(resource, action, options={}){
+  const u=new URL(api,location.origin);u.searchParams.set('resource',resource);if(action)u.searchParams.set('action',action);
+  for(const [k,v] of Object.entries(options.query||{})) if(v!==''&&v!=null)u.searchParams.set(k,v);
+  const init={method:options.method||'GET',headers:{}};
+  if(options.body!==undefined){init.headers['Content-Type']='application/json';init.body=JSON.stringify(options.body)}
+  const r=await fetch(u,init);const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.error||'Request failed.');return data;
+}
+function showAuth(msg=''){vaultView.classList.add('hidden');authView.classList.remove('hidden');$('#authMsg').textContent=msg}
+function showVault(customer){state.customer=customer;authView.classList.add('hidden');vaultView.classList.remove('hidden');$('#customerName').textContent=customer.name||'Ochilink customer';$('#customerEmail').textContent=customer.email||''}
+async function bootstrap(){
+  const qs=new URLSearchParams(location.search);
+  try{
+    if(qs.get('magic_token')){
+      const x=await request('customer-auth','exchange-magic',{method:'POST',body:{magic_token:qs.get('magic_token')}});
+      history.replaceState({},'',location.pathname);showVault(x.customer);
+    }else if(qs.get('application_id')&&qs.get('access_token')){
+      const x=await request('customer-auth','exchange-application',{method:'POST',body:{application_id:qs.get('application_id'),access_token:qs.get('access_token')}});
+      history.replaceState({},'',location.pathname);showVault(x.customer);
+    }else{
+      const x=await request('customer-auth','session');
+      if(!x.customer)return showAuth();showVault(x.customer);
+    }
+    await loadData();
+  }catch(e){showAuth(e.message)}
+}
+async function loadData(){
+  state.data=await request('customer-documents','list',{query:{filter:state.filter,q:state.q}});
+  render();
+}
+function render(){
+  const d=state.data;$('#fileCount').textContent=d.documents.length;$('#folderCount').textContent=d.folders.length;$('#appCount').textContent=d.applications.length;
+  $('#folders').innerHTML=d.folders.length?d.folders.map(f=>`<div class="card"><div class="foldertitle">📁 ${esc(f.name)}</div><div class="count">${f.file_count} file${Number(f.file_count)===1?'':'s'}</div></div>`).join(''):'<div class="small">No folders yet.</div>';
+  filesBody.innerHTML=d.documents.map(x=>`<tr>
+    <td><div class="file">${esc(x.original_name)}</div><div class="small">${esc(x.content_type)}</div></td>
+    <td>${esc(x.folder_name||'—')}</td><td>${bytes(x.byte_size)}</td>
+    <td>${x.uploaded_at?new Date(x.uploaded_at).toLocaleDateString():'Pending'}</td>
+    <td><div class="actions">
+      ${x.state==='ready'&&state.filter!=='trash'?'<button class="btn mini" data-download="'+x.id+'">Open</button>':''}
+      ${state.filter==='trash'?'<button class="btn mini" data-action="restore" data-id="'+x.id+'">Restore</button>':`<button class="btn mini" data-action="${x.starred?'unstar':'star'}" data-id="${x.id}">${x.starred?'Unstar':'Star'}</button><button class="btn mini danger" data-action="trash" data-id="${x.id}">Trash</button>`}
+      ${x.state!=='ready'?'<span class="tag pending">Pending</span>':''}
+    </div></td></tr>`).join('');
+  $('#emptyFiles').classList.toggle('hidden',d.documents.length>0);
+  $('#applications').innerHTML=d.applications.map(a=>`<div class="app"><div><div class="appname">${esc(a.property_address||'Rental application')}</div><div class="small">Reference: ${esc(a.id)}</div></div><div style="text-align:right"><div class="status">${esc(a.status)}</div><div class="small">${a.submitted_at?new Date(a.submitted_at).toLocaleDateString():'Not submitted'}</div></div></div>`).join('');
+  $('#emptyApps').classList.toggle('hidden',d.applications.length>0);
+  $('#folderSelect').innerHTML='<option value="">No folder</option>'+d.folders.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  $('#applicationSelect').innerHTML='<option value="">No application</option>'+d.applications.map(a=>`<option value="${a.id}">${esc(a.property_address||a.id)}</option>`).join('');
+}
+$('#magicForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMsg');msg.textContent='Sending secure link…';try{await request('customer-auth','request-link',{method:'POST',body:{email:$('#email').value}});msg.textContent='If an Ochilink customer account exists for that email, a secure sign-in link has been sent.'}catch(err){msg.textContent=err.message;msg.classList.add('error')}});
+$('#logoutBtn').addEventListener('click',async()=>{try{await request('customer-auth','logout',{method:'POST',body:{}})}finally{state.customer=null;showAuth('You are signed out.')}});
+$('#nav').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(b.dataset.view==='applications'){$('#documentsView').classList.add('hidden');$('#applicationsView').classList.remove('hidden');return}$('#applicationsView').classList.add('hidden');$('#documentsView').classList.remove('hidden');state.filter=b.dataset.filter||'all';state.q='';$('#search').value='';$('#pageTitle').textContent=b.textContent;$('#filterLabel').textContent=b.textContent;await loadData()});
+let timer;$('#search').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(async()=>{state.q=$('#search').value;await loadData()},250)});
+$('#uploadBtn').addEventListener('click',()=>$('#uploadDialog').showModal());$('#newFolderBtn').addEventListener('click',()=>$('#folderDialog').showModal());document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
+$('#folderForm').addEventListener('submit',async e=>{e.preventDefault();try{await request('customer-documents','folder',{method:'POST',body:{name:$('#folderName').value}});$('#folderDialog').close();$('#folderName').value='';await loadData()}catch(err){alert(err.message)}});
+$('#uploadForm').addEventListener('submit',async e=>{e.preventDefault();const file=$('#fileInput').files[0],msg=$('#uploadMsg');if(!file)return;msg.textContent='Authorizing upload…';try{
+  const begin=await request('customer-documents','begin-upload',{method:'POST',body:{filename:file.name,content_type:file.type||'application/octet-stream',byte_size:file.size,folder_id:$('#folderSelect').value||null,application_id:$('#applicationSelect').value||null}});
+  msg.textContent='Uploading securely…';
+  const put=await fetch(begin.upload_url,{method:'PUT',headers:{'Content-Type':file.type||'application/octet-stream'},body:file});if(!put.ok)throw new Error('The private storage upload failed.');
+  await request('customer-documents','complete-upload',{method:'POST',body:{document_id:begin.document_id,pathname:begin.pathname,etag:put.headers.get('etag')||''}});
+  msg.textContent='Upload complete.';$('#fileInput').value='';setTimeout(()=>$('#uploadDialog').close(),400);await loadData();
+}catch(err){msg.textContent=err.message;msg.classList.add('error')}});
+filesBody.addEventListener('click',async e=>{const dl=e.target.closest('[data-download]');if(dl){try{const x=await request('customer-documents','download',{query:{id:dl.dataset.download}});location.href=x.url}catch(err){alert(err.message)}return}const b=e.target.closest('[data-action]');if(!b)return;try{await request('customer-documents','document',{method:'PUT',body:{id:b.dataset.id,action:b.dataset.action}});await loadData()}catch(err){alert(err.message)}});
+bootstrap();
+</script>
+</body>
+</html>
