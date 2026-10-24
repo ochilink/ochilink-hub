@@ -33,6 +33,7 @@ The repository currently contains:
 - `013_high_res_app_cover_previews.sql`
 - `014_rental_application.sql`
 - `015_activate_rental_document_apps.sql`
+- `016_app_preview_library.sql`
 
 Important exceptions:
 
@@ -41,6 +42,7 @@ Important exceptions:
 - The numbering gaps do not by themselves prove that Production is missing schema changes.
 - Migration 014 is schema-only and can be applied before feature activation.
 - Migration 015 publishes the Rental Application and Document Storage catalog cards and must run only after the new Production code is deployed and verified.
+- Migration 016 adds the hosted HTML preview library schema and does not publish or enable a preview by itself.
 
 Expected ledger entries for the currently tracked schema migrations are:
 
@@ -54,6 +56,7 @@ Expected ledger entries for the currently tracked schema migrations are:
 - `013_high_res_app_cover_previews`
 - `014_rental_application`
 - `015_activate_rental_document_apps`
+- `016_app_preview_library`
 
 Use `database/verify_migration_history.sql` for a read-only verification.
 
@@ -139,6 +142,7 @@ A disposable restore/test database should confirm at minimum:
 - rental application and fee tables are structurally valid
 - customer account/session/magic-link tables are structurally valid
 - customer folder/document metadata tables are structurally valid
+- hosted app preview metadata and version-history tables are structurally valid
 - security/audit tables are readable
 - no Production connection string is used by the test deployment
 
