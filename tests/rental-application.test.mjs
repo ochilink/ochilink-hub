@@ -26,9 +26,9 @@ test('rental application uses encrypted persistence and server-controlled Stripe
 
 test('rental application page is wired to Hub fees and checkout APIs', () => {
   const page = fs.readFileSync(new URL('../public/rental-application/index.html', import.meta.url), 'utf8');
-  assert.match(page, /\/api\/hub\?resource=rental&action=fees/);
-  assert.match(page, /\/api\/hub\?resource=rental&action=submit/);
-  assert.match(page, /\/api\/hub\?resource=rental&action=status/);
+  assert.ok(page.includes('/api/hub?resource=rental&action=fees'));
+  assert.ok(page.includes('/api/hub?resource=rental&action=submit'));
+  assert.ok(page.includes('/api/hub?resource=rental&action=status'));
   assert.match(page, /hub-rental\.css/);
   assert.doesNotMatch(page, /no server call made/i);
 });
