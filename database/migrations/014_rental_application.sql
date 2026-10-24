@@ -37,6 +37,8 @@ CREATE TABLE IF NOT EXISTS rental_applications (
     stripe_session_id TEXT UNIQUE,
     stripe_payment_intent TEXT UNIQUE,
     access_token_hash TEXT NOT NULL UNIQUE,
+    access_token_expires_at TIMESTAMPTZ NOT NULL DEFAULT (now()+interval '1 day'),
+    access_token_used_at TIMESTAMPTZ,
     paid_at TIMESTAMPTZ,
     submitted_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
