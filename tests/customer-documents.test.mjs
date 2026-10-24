@@ -22,8 +22,8 @@ test('customer account UI uses real Hub account and document APIs', () => {
   const page = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
   const vercel = fs.readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
 
-  assert.match(page, /resource','customer-auth/);
-  assert.match(page, /resource','customer-documents/);
+  assert.match(page, /request\('customer-auth'/);
+  assert.match(page, /request\('customer-documents'/);
   assert.match(page, /begin-upload/);
   assert.match(page, /complete-upload/);
   assert.match(page, /data-download/);
