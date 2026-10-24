@@ -10,6 +10,15 @@
     link.className = booking.className;
     link.style.marginLeft = '8px';
     booking.insertAdjacentElement('afterend', link);
+    if (!document.querySelector('[data-preview-admin-link]')) {
+      const preview = document.createElement('a');
+      preview.href = '/admin/previews/';
+      preview.setAttribute('data-preview-admin-link','1');
+      preview.textContent = 'Preview library';
+      preview.className = booking.className;
+      preview.style.marginLeft = '8px';
+      link.insertAdjacentElement('afterend', preview);
+    }
     return true;
   }
   if (document.readyState === 'loading') {
