@@ -301,6 +301,42 @@ test('admin app covers accept safe inline raster images and reject unsafe data p
     await request('apps', 'DELETE', { id: created.body.app.id }, adminCookie);
 });
 
+test('cover uploads can exceed the normal 16 KB mutation limit without widening other endpoints', async () => {
+    const largeCover =
+        'data:image/jpeg;base64,' + 'A'.repeat(24000);
+    const created = await request(
+        'apps',
+        'POST',
+        {
+            name: 'Large cover app',
+            slug: 'large-cover-app',
+            description: 'Cover request-size regression',
+            link: null,
+            cover_image_url: largeCover,
+            tech: ['React'],
+            status: 'Coming Soon',
+            is_published: false,
+            sort_order: 998,
+        },
+        adminCookie,
+    );
+    assert.equal(created.status, 200);
+
+    const oversizedPricing = await request(
+        'pricing',
+        'PUT',
+        {
+            hourly: 75,
+            minimum: 150,
+            padding: 'x'.repeat(17000),
+        },
+        adminCookie,
+    );
+    assert.equal(oversizedPricing.status, 413);
+
+    await request('apps', 'DELETE', { id: created.body.app.id }, adminCookie);
+});
+
 test('invalid links, duplicate slugs and invalid identifiers are handled', async () => {
     const app = {
         name: 'Invalid link',

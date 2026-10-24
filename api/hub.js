@@ -279,6 +279,10 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             if (!['GET', 'POST', 'PUT', 'DELETE'].includes(req.method))
                 fail(405, 'Method not allowed.');
             const resource = req.query?.resource || 'public';
+            const requestSizeLimit =
+                resource === 'apps' && ['POST', 'PUT'].includes(req.method)
+                    ? 180000
+                    : 16384;
             if (req.method !== 'GET') {
                 const host = req.headers.host;
                 // Reject browser mutations without a matching Origin. No wildcard CORS.
@@ -290,11 +294,17 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     )
                 )
                     fail(415, 'JSON required.');
-                if (Number(req.headers['content-length'] || 0) > 16384)
+                if (
+                    Number(req.headers['content-length'] || 0) >
+                    requestSizeLimit
+                )
                     fail(413, 'Request too large.');
             }
             const body = req.body || {};
-            if (Buffer.byteLength(JSON.stringify(body)) > 16384)
+            if (
+                Buffer.byteLength(JSON.stringify(body)) >
+                requestSizeLimit
+            )
                 fail(413, 'Request too large.');
             const pool = poolProvider();
             if (resource === 'public' && req.method === 'GET') {
