@@ -44,6 +44,7 @@ test('private Blob authorizations and one-time rental account tokens stay constr
   assert.match(blob, /\/signed-token/);
   assert.match(blob, /operations: \['put'\]/);
   assert.match(blob, /operations: \['get'\]/);
+  assert.match(blob, /operations: \['head'\]/);
   assert.match(blob, /15 \* 60 \* 1000/);
   assert.match(blob, /5 \* 60 \* 1000/);
   assert.match(customer, /access_token_expires_at>now\(\)/);
@@ -92,4 +93,18 @@ test('rental documents are categorized and returned with application checklist d
   assert.ok(page.includes('checklistFor'));
   assert.ok(page.includes('Bank Statement'));
   assert.ok(page.includes('Rental History'));
+});
+
+test('document completion verifies the private Blob before marking metadata ready', () => {
+  const docs = fs.readFileSync(new URL('../lib/documents.js', import.meta.url), 'utf8');
+  const blob = fs.readFileSync(new URL('../lib/blob-storage.js', import.meta.url), 'utf8');
+
+  assert.match(docs, /createPrivateHeadUrl\(pathname\)/);
+  assert.match(docs, /method: 'HEAD'/);
+  assert.match(docs, /content-length/);
+  assert.match(docs, /content-type/);
+  assert.match(docs, /Uploaded file size does not match the authorized upload/);
+  assert.match(docs, /Uploaded file type does not match the authorized upload/);
+  assert.match(blob, /sign\(issued\.clientSigningToken, 'head', pathname/);
+  assert.match(blob, /2 \* 60 \* 1000/);
 });
