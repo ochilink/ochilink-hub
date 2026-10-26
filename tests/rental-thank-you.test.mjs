@@ -5,9 +5,9 @@ import fs from 'node:fs';
 test('rental thank-you page is branded and offers PDF/account actions', () => {
   const html=fs.readFileSync(new URL('../public/rental-application/thank-you/index.html', import.meta.url),'utf8');
   assert.match(html,/ochilink-final-logo\.svg/);
-  assert.match(html,/Download Application PDF/);
+  assert.doesNotMatch(html,/Download Application PDF/);
   assert.match(html,/Open My Account/);
-  assert.match(html,/jspdf/i);
+  assert.doesNotMatch(html,/jspdf/i);
   assert.match(html,/ochi_rental_thank_you/);
 });
 
