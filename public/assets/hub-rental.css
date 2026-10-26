@@ -48,3 +48,42 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     outline:2px solid var(--green) !important;
     outline-offset:2px;
 }
+
+@media (max-width: 767px) {
+    .rental-header {
+        height:auto !important;
+        min-height:108px;
+        display:grid !important;
+        grid-template-columns:auto minmax(0,1fr);
+        grid-template-areas:
+            "brand brand"
+            "menu actions";
+        gap:8px 12px;
+        padding-top:10px !important;
+        padding-bottom:10px !important;
+        align-items:center;
+    }
+    .rental-header-brand-group {
+        display:contents !important;
+    }
+    .rental-header-logo {
+        grid-area:brand;
+        justify-self:center;
+    }
+    .rental-menu-button {
+        grid-area:menu;
+        justify-self:start;
+    }
+    .rental-header-actions {
+        grid-area:actions;
+        justify-self:end;
+        min-width:0;
+        gap:8px !important;
+    }
+    .rental-header-actions > button {
+        flex-shrink:0;
+    }
+    .rental-header-signout {
+        display:none !important;
+    }
+}
