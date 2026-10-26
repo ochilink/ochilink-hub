@@ -315,13 +315,6 @@ async function downloadApplicationPdf(id){
     : [['References','None listed']],state);
   addPdfSection(doc,'Emergency Contact',[['Name',properCase(d.emergency?.name)],['Phone',d.emergency?.phone],['Relationship',properCase(d.emergency?.rel)],['Address',d.emergency?.address]],state);
   addPdfSection(doc,'Screening',[['Eviction',yesNoCase(d.screening?.eviction)],['Bankruptcy',yesNoCase(d.screening?.bankruptcy)],['Criminal convictions',yesNoCase(d.screening?.criminal)],['Smoking',yesNoCase(d.screening?.smoking)],['Pets',yesNoCase(d.screening?.pets)],['Pet details',sentenceCase(d.screening?.petsDetail)]],state);
-  addPdfSection(doc,'Application Fee & Payment',[
-    ['Application Fee',money(payload.application_fee_cents,payload.currency)],
-    ['Processing Fee',money(payload.processing_fee_cents,payload.currency)],
-    ['Total Paid',money(payload.total_cents,payload.currency)],
-    ['Payment Status','Paid'],
-  ],state);
-
   const addDisclosure=(title,paragraphs)=>{
     const pageBottom=748,left=42,right=570,width=right-left;
     const ensure=(needed=40)=>{if(state.y+needed>pageBottom){doc.addPage();state.y=50}};
@@ -340,12 +333,19 @@ async function downloadApplicationPdf(id){
     state.y+=4;
   };
 
-  addDisclosure('Application Fee & Payment',[
+  addDisclosure('Application Fee & Payment Disclosure',[
     'A non-refundable Application Fee of $150.00 per applicant is payable at the time this application is submitted. The Application Fee covers the cost of processing and screening this application.',
     'Applicants paying by card are charged Stripe’s standard processing fee of 2.9% + $0.30 in addition to the Application Fee. On the $150.00 Application Fee, the processing fee is $4.65.',
     'Application Fee $150.00 + Processing Fee $4.65 = Total Due $154.65',
     'This application will not be processed until payment is received. The Application Fee and any processing fee are non-refundable regardless of the outcome of this application, including if the application is denied or withdrawn.',
   ]);
+
+  addPdfSection(doc,'Application Fee & Payment',[
+    ['Application Fee',money(payload.application_fee_cents,payload.currency)],
+    ['Processing Fee',money(payload.processing_fee_cents,payload.currency)],
+    ['Total Paid',money(payload.total_cents,payload.currency)],
+    ['Payment Status','Paid'],
+  ],state);
 
   addDisclosure('Authorization, Acknowledgment & Signature',[
     'By signing below, I certify that the information in this application is true and complete. I authorize the landlord / property manager and its agents to verify this information, including contacting employers, landlords, and references, and to obtain consumer reports — including credit, criminal background, and rental / eviction history — in connection with this application and, if approved, during the tenancy, as permitted by the Fair Credit Reporting Act (15 U.S.C. § 1681) and applicable Florida law. I understand that providing false, incomplete, or misleading information, including failure to disclose all occupants or pets, may be grounds for denial or, if discovered after move-in, for termination of the tenancy.',
