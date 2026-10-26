@@ -108,3 +108,16 @@ test('document completion verifies the private Blob before marking metadata read
   assert.match(blob, /sign\(issued\.clientSigningToken, 'head', pathname/);
   assert.match(blob, /2 \* 60 \* 1000/);
 });
+
+
+test('signed-in customer account owns rental PDF download action', () => {
+  const account = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+  const api = fs.readFileSync(new URL('../api/hub.js', import.meta.url), 'utf8');
+  const rental = fs.readFileSync(new URL('../lib/rental.js', import.meta.url), 'utf8');
+  assert.match(account, /data-app-pdf/);
+  assert.match(account, /Download PDF/);
+  assert.match(account, /jspdf/i);
+  assert.match(api, /action === 'rental'/);
+  assert.match(rental, /customerRentalApplication/);
+  assert.match(rental, /customer_id=\$2/);
+});
