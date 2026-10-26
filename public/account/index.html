@@ -1,15 +1,16 @@
 <!doctype html>
 <html lang="en">
-<head>\n  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<head>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>My Documents | Ochilink</title>
   <meta name="referrer" content="no-referrer">
   <style>
-    :root{--bg:#0b0f1a;--panel:#121827;--panel2:#172033;--line:#25314a;--text:#eef4ff;--muted:#8fa0ba;--green:#00ffc6;--blue:#4da3ff;--danger:#ff6b7a}
+    :root{--bg:#0b0f1a;--panel:#121827;--panel2:#172033;--line:#25314a;--text:#eef4ff;--muted:#8fa0ba;--green:#447E37;--blue:#4da3ff;--danger:#ff6b7a}
     *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
     button,input,select{font:inherit}.hidden{display:none!important}.shell{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
-    aside{border-right:1px solid var(--line);background:#0e1420;padding:22px 16px;position:sticky;top:0;height:100vh}.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.04em;margin-bottom:24px}.logo{width:34px;height:34px;border-radius:10px;border:1px solid #1e5b51;background:linear-gradient(145deg,#0f2e2a,#123c35);display:grid;place-items:center;color:var(--green)}
+    aside{border-right:1px solid var(--line);background:#0e1420;padding:22px 16px;position:sticky;top:0;height:100vh}.brand{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.04em;margin-bottom:24px}.brand-icon{width:34px;height:34px;display:block;flex:0 0 auto}.brand-wordmark{width:118px;height:auto;display:block}.brand-wordmark.vault{width:132px}
     nav{display:grid;gap:6px}.navbtn{width:100%;border:0;background:transparent;color:var(--muted);text-align:left;padding:11px 12px;border-radius:10px;cursor:pointer}.navbtn:hover,.navbtn.active{background:#172235;color:var(--text)} .navbtn.active{box-shadow:inset 3px 0 0 var(--green)}
     .sidefoot{position:absolute;left:16px;right:16px;bottom:18px;border-top:1px solid var(--line);padding-top:14px}.small{font-size:12px;color:var(--muted)}
     main{min-width:0}.topbar{height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 26px;position:sticky;top:0;background:rgba(11,15,26,.94);backdrop-filter:blur(14px);z-index:3}
@@ -28,7 +29,7 @@
 <body>
   <section id="authView" class="authwrap">
     <div class="auth">
-      <div class="brand"><div class="logo">OL</div> OCHILINK</div>
+      <div class="brand"><img class="brand-icon" src="/favicon.svg" alt=""><img class="brand-wordmark" src="/assets/ochilink-final-logo.svg" alt="Ochilink"></div>
       <h1>Customer account</h1>
       <p>Access your rental applications and private documents. We use secure sign-in links instead of reusable customer passwords.</p>
       <form id="magicForm">
@@ -42,7 +43,7 @@
 
   <section id="vaultView" class="shell hidden">
     <aside>
-      <div class="brand"><div class="logo">OL</div> OCHILINK VAULT</div>
+      <div class="brand"><img class="brand-icon" src="/favicon.svg" alt=""><img class="brand-wordmark vault" src="/assets/ochilink-final-logo.svg" alt="Ochilink"><span class="small" style="margin-left:2px">Vault</span></div>
       <nav id="nav">
         <button class="navbtn active" data-filter="all">My Documents</button>
         <button class="navbtn" data-filter="recent">Recent</button>
