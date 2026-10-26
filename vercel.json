@@ -1,7 +1,9 @@
-
 {
   "rewrites": [
-    {"source": "/api/admin-live-smoke-test", "destination": "/api/hub?resource=admin-live-smoke-test"},
+    {
+      "source": "/api/admin-live-smoke-test",
+      "destination": "/api/hub?resource=admin-live-smoke-test"
+    },
     {
       "source": "/api/auth/login",
       "destination": "/api/auth-login"
@@ -11,8 +13,24 @@
       "destination": "/admin/index.html"
     },
     {
+      "source": "/admin/rentals",
+      "destination": "/admin/rentals/index.html"
+    },
+    {
+      "source": "/admin/previews",
+      "destination": "/admin/previews/index.html"
+    },
+    {
       "source": "/booking",
       "destination": "/booking/index.html"
+    },
+    {
+      "source": "/rental-application/thank-you",
+      "destination": "/rental-application/thank-you/index.html"
+    },
+    {
+      "source": "/account",
+      "destination": "/account/index.html"
     }
   ],
   "headers": [

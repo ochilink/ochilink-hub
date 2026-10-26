@@ -99,8 +99,8 @@ body[data-hub-page='admin'] {
     --sidebar: #0B0F1A;
     --sidebar-text: #F8FAFC;
     --sidebar-muted: #CBD5E1;
-    --lime: #00DFAF;
-    --lime-ink: #003D32;
+    --lime: #447E37;
+    --lime-ink: #F8FAFC;
 }
 
 /* Admin dark mode */
@@ -119,8 +119,8 @@ body[data-hub-page='admin'][data-theme='dark'] {
     --sidebar: #080C16;
     --sidebar-text: #F8FAFC;
     --sidebar-muted: #CBD5E1;
-    --lime: #00FFC6;
-    --lime-ink: #002E26;
+    --lime: #447E37;
+    --lime-ink: #F8FAFC;
 }
 
 /* Stronger hierarchy */

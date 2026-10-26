@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thank You | Ochilink Rental Application</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="referrer" content="no-referrer">
+  <style>
+    :root{--bg:#0B0F1A;--card:#141B2A;--border:#334155;--text:#F8FAFC;--muted:#CBD5E1;--green:#447E37;--green-dark:#35672D;--green-light:rgba(68,126,55,.16)}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+    .wrap{min-height:100vh;padding:28px 18px 60px}.top{max-width:780px;margin:0 auto 28px;display:flex;justify-content:flex-start;align-items:center}
+    .logo{width:150px;height:auto}.card{max-width:780px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:38px;box-shadow:0 20px 55px rgba(0,0,0,.28)}
+    .check{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;background:var(--green-light);color:var(--green);font-size:34px;font-weight:800;margin-bottom:20px}
+    h1{font-size:38px;line-height:1.08;margin:0 0 10px}.lead{color:var(--muted);font-size:16px;line-height:1.6;margin:0 0 28px}
+    .summary{border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:22px 0}.row{display:flex;justify-content:space-between;gap:18px;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px}.row:last-child{border-bottom:0}.row strong{color:#fff}.label{color:var(--muted)}
+    .total{font-size:18px;font-weight:800;color:var(--green)}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}.btn{appearance:none;border:1px solid var(--border);border-radius:999px;padding:13px 20px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:var(--green);border-color:var(--green);color:white}.secondary{background:transparent;color:white}.note{margin-top:18px;color:var(--muted);font-size:12px;line-height:1.5}.ref{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    @media(max-width:640px){.card{padding:26px 20px}.top{padding:0}.logo{width:128px}h1{font-size:31px}.actions{flex-direction:column}.btn{width:100%}}
+  </style>
+<script>
+(async()=>{
+  try{
+    const r=await fetch('/api/hub?resource=canonical-origin',{cache:'no-store'});
+    if(r.ok){
+      const {origin}=await r.json();
+      if(origin && origin!==location.origin){
+        location.replace(origin+location.pathname+location.search+location.hash);
+        return;
+      }
+    }
+  }catch{}
+})();
+</script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <img src="/assets/ochilink-final-logo.svg" alt="Ochilink" class="logo">
+    </div>
+    <main class="card">
+      <div class="check">✓</div>
+      <h1>Thank you. Your application was submitted.</h1>
+      <p class="lead">Your payment has been verified and your Ochilink rental application was submitted securely. Continue to your Ochilink account to manage your application and private documents.</p>
+      <div class="summary">
+        <div class="row"><span class="label">Application reference</span><strong class="ref" id="applicationRef">—</strong></div>
+        <div class="row"><span class="label">Applicant</span><strong id="applicantName">—</strong></div>
+        <div class="row"><span class="label">Property</span><strong id="propertyAddress">—</strong></div>
+        <div class="row"><span class="label">Status</span><strong id="status">Submitted</strong></div>
+        <div class="row"><span class="label">Total paid</span><strong class="total" id="totalPaid">—</strong></div>
+      </div>
+      <div class="actions">
+        <a class="btn primary" id="openAccount" href="/account/">Open My Account</a>
+      </div>
+      <p class="note">Your application data is encrypted in Ochilink. Sign in to your account to view your application and download a PDF copy.</p>
+    </main>
+  </div>
+<script>
+(async function(){
+  let payload=null;
+  const raw=sessionStorage.getItem('ochi_rental_thank_you');
+  if(raw){
+    try{ payload=JSON.parse(raw); }catch{}
+  }
+  if(!payload){
+    try{
+      const response=await fetch('/api/hub?resource=customer-auth&action=latest-rental',{cache:'no-store'});
+      if(response.ok){
+        const data=await response.json();
+        payload=data.application||null;
+        if(payload) sessionStorage.setItem('ochi_rental_thank_you',JSON.stringify(payload));
+      }
+    }catch{}
+  }
+  if(!payload){
+    document.querySelector('.lead').textContent='We could not load a paid rental application for this browser session. Open My Account to view your applications and documents.';
+    return;
+  }
+  const d=payload.application_data||{}, personal=d.personal||{}, property=d.property||{};
+  const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:String(payload.currency||'usd').toUpperCase()}).format(Number(v||0)/100);
+  document.getElementById('applicationRef').textContent=payload.application_id||'—';
+  document.getElementById('applicantName').textContent=personal.fullName||'—';
+  document.getElementById('propertyAddress').textContent=property.address||'—';
+  document.getElementById('status').textContent=payload.status==='submitted'?'Submitted':(payload.status||'Submitted');
+  document.getElementById('totalPaid').textContent=money(payload.total_cents);
+
+  try{
+    const session=await fetch('/api/hub?resource=customer-auth&action=session',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+    if(session?.customer){
+      document.getElementById('openAccount').href='/account/';
+    }
+  }catch{}
+
+
+})();
+</script>
+</body>
+</html>

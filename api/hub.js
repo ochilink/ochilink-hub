@@ -1,13 +1,38 @@
 import { createSmokeTestHandler } from './_admin-live-smoke-test.js';
 import { featureRequest, capabilities } from '../lib/features.js';
-import { useMfa, encryptionReady } from '../lib/security.js';
+import { useMfa, encryptionReady, canonicalOrigin } from '../lib/security.js';
 import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
+import { createRentalCheckout, getRentalFees, rentalApplicationStatus, latestCustomerRentalApplication, customerRentalApplication, reconcileRentalApplicationPayment } from '../lib/rental.js';
+import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, rentalFeeAdminSnapshot, updateRentalApplicationStatus, updateRentalFees } from '../lib/rental-admin.js';
+import { activatePreviewVersion, beginAppPreviewUpload, completeAppPreviewUpload, listAppPreviews, setPreviewEnabled } from '../lib/app-previews.js';
+import {
+    currentCustomer,
+    customerSessionToken,
+    exchangeApplicationAccess,
+    exchangeMagicLink,
+    requestMagicLink,
+    setCustomerCookie,
+} from '../lib/customer.js';
+import {
+    beginUpload,
+    completeUpload,
+    createFolder as createCustomerFolder,
+    documentDownload,
+    listCustomerDocuments,
+    updateDocument,
+} from '../lib/documents.js';
 import { createHash, randomBytes, createHmac } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { getPool } from './_db.js';
 
+function requestOrigin(req) {
+    const host = String(req.headers?.host || '').trim();
+    const origin = String(req.headers?.origin || '').trim();
+    if (host && origin === `https://${host}`) return origin;
+    return null;
+}
 function clientIp(req) {
     // Vercel supplies a proxy-controlled client IP; do not trust arbitrary
     // forwarding chains when Vercel's request marker is present.
@@ -294,7 +319,9 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             const requestSizeLimit =
                 resource === 'apps' && ['POST', 'PUT'].includes(req.method)
                     ? 900000
-                    : 16384;
+                    : resource === 'rental' && req.method === 'POST'
+                      ? 220000
+                      : 16384;
             if (req.method !== 'GET') {
                 const host = req.headers.host;
                 // Reject browser mutations without a matching Origin. No wildcard CORS.
@@ -321,7 +348,15 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             const pool = poolProvider();
             if (resource === 'public' && req.method === 'GET') {
                 const apps = await pool.query(
-                    'SELECT id,slug,name,description,link,tech,status,sort_order,cover_image_url FROM apps WHERE is_published ORDER BY sort_order,name',
+                    `SELECT a.id,a.slug,a.name,a.description,a.link,a.tech,a.status,a.sort_order,a.cover_image_url,
+                            a.preview_enabled,p.public_url AS preview_url,p.version AS preview_version
+                     FROM apps a
+                     LEFT JOIN LATERAL (
+                       SELECT public_url,version FROM app_previews
+                       WHERE app_id=a.id AND state='ready' AND is_active
+                       ORDER BY version DESC LIMIT 1
+                     ) p ON true
+                     WHERE a.is_published ORDER BY a.sort_order,a.name`,
                 );
                 const pricing = await pool.query(
                     "SELECT value FROM site_settings WHERE key='consultation_pricing'",
@@ -347,6 +382,111 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                         result.rows[0].cover_image_url ||
                         null,
                 });
+            }
+            if (resource === 'canonical-origin' && req.method === 'GET')
+                return res.json({ origin: canonicalOrigin() });
+            if (resource === 'rental' && req.method === 'GET') {
+                const action = String(req.query?.action || 'fees');
+                if (action === 'fees') return res.json(await getRentalFees(pool));
+                if (action === 'status')
+                    return res.json(await rentalApplicationStatus(
+                        pool,
+                        req.query?.id,
+                        req.query?.access_token,
+                        stripeReady() ? stripeProvider() : null,
+                    ));
+                fail(400, 'Invalid rental action.');
+            }
+            if (resource === 'rental' && req.method === 'POST') {
+                if (String(req.query?.action || '') !== 'submit')
+                    fail(400, 'Invalid rental action.');
+                const result = await createRentalCheckout(
+                    pool,
+                    body,
+                    stripeReady() ? stripeProvider() : null,
+                    requestOrigin(req),
+                );
+                return res.status(201).json(result);
+            }
+            if (resource === 'customer-auth') {
+                const action = String(req.query?.action || '');
+                if (req.method === 'POST' && action === 'request-link') {
+                    const email = text(body.email, 254).toLowerCase();
+                    await throttle(pool, `customer-link-ip:${clientIp(req)}`, 20, req, 'customer_magic_link_ip');
+                    await throttle(pool, `customer-link-email:${email}`, 6, req, 'customer_magic_link_email');
+                    const result = await requestMagicLink(pool, email);
+                    await flushMail(pool, { limit: 2 });
+                    return res.json(result);
+                }
+                if (req.method === 'POST' && action === 'exchange-application') {
+                    const result = await exchangeApplicationAccess(
+                        pool,
+                        body.application_id,
+                        body.access_token,
+                    );
+                    setCustomerCookie(res, result.token, 30 * 24 * 60 * 60);
+                    return res.json({ customer: result.customer });
+                }
+                if (req.method === 'POST' && action === 'exchange-magic') {
+                    const result = await exchangeMagicLink(pool, body.magic_token);
+                    setCustomerCookie(res, result.token, 30 * 24 * 60 * 60);
+                    return res.json({ customer: result.customer });
+                }
+                const customer = await currentCustomer(pool, req);
+                if (req.method === 'GET' && action === 'session')
+                    return res.json({ customer });
+                if (req.method === 'GET' && action === 'latest-rental') {
+                    if (!customer) fail(401, 'Please sign in to your customer account.');
+                    return res.json({
+                        application: await latestCustomerRentalApplication(pool, customer.id),
+                    });
+                }
+                if (req.method === 'GET' && action === 'rental') {
+                    if (!customer) fail(401, 'Please sign in to your customer account.');
+                    const application = await customerRentalApplication(
+                        pool,
+                        customer.id,
+                        String(req.query?.id || ''),
+                    );
+                    if (!application) fail(404, 'Application not found.');
+                    return res.json({ application });
+                }
+                if (req.method === 'POST' && action === 'logout') {
+                    if (customer) {
+                        await pool.query(
+                            'DELETE FROM customer_sessions WHERE token_hash=$1',
+                            [hash(customerSessionToken(req))],
+                        );
+                    }
+                    if (customer)
+                        await audit(pool, null, 'CUSTOMER_LOGOUT', { customer_id: customer.id });
+                    setCustomerCookie(res);
+                    return res.json({ ok: true });
+                }
+                fail(400, 'Invalid customer account action.');
+            }
+            if (resource === 'customer-documents') {
+                const customer = await currentCustomer(pool, req);
+                if (!customer) fail(401, 'Please sign in to your customer account.');
+                const action = String(req.query?.action || 'list');
+                if (req.method === 'GET' && action === 'list')
+                    return res.json(await listCustomerDocuments(
+                        pool,
+                        customer.id,
+                        String(req.query?.filter || 'all'),
+                        String(req.query?.q || ''),
+                    ));
+                if (req.method === 'GET' && action === 'download')
+                    return res.json(await documentDownload(pool, customer.id, req.query?.id));
+                if (req.method === 'POST' && action === 'folder')
+                    return res.status(201).json(await createCustomerFolder(pool, customer.id, body.name));
+                if (req.method === 'POST' && action === 'begin-upload')
+                    return res.status(201).json(await beginUpload(pool, customer.id, body));
+                if (req.method === 'POST' && action === 'complete-upload')
+                    return res.json(await completeUpload(pool, customer.id, body));
+                if (req.method === 'PUT' && action === 'document')
+                    return res.json(await updateDocument(pool, customer.id, body));
+                fail(400, 'Invalid document action.');
             }
             if (resource === 'login' && req.method === 'POST')
                 return res.json(await login(pool, req, res, body));
@@ -445,7 +585,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                 if (bookingToken) {
                     // Commit the hold/payment before Stripe: a timeout or lost response
                     // can then be retried with the same token and Stripe idempotency key.
-                    const result = await transaction(pool, client => checkout(client, bookingToken, stripeProvider()));
+                    const result = await transaction(pool, client => checkout(client, bookingToken, stripeProvider(), requestOrigin(req)));
                     return res.status(201).json({ ok: true, checkout_url: result.url });
                 }
                 await flushMail(pool, { limit: 3 });
@@ -467,6 +607,88 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             }
             if (user.role !== 'admin')
                 fail(403, 'Administrator access required.');
+            if (resource === 'rental-admin') {
+                const action = String(req.query?.action || 'list');
+                if (req.method === 'GET' && action === 'list')
+                    return res.json(await listRentalApplications(
+                        pool,
+                        String(req.query?.q || ''),
+                        String(req.query?.status || 'all'),
+                    ));
+                if (req.method === 'GET' && action === 'detail')
+                    return res.json(await rentalApplicationAdminDetail(pool, req.query?.id));
+                if (req.method === 'GET' && action === 'download') {
+                    const result = await adminRentalDocumentDownload(
+                        pool,
+                        req.query?.application_id,
+                        req.query?.document_id,
+                    );
+                    await audit(pool, user.id, 'ADMIN_RENTAL_DOCUMENT_OPENED', {
+                        application_id: req.query?.application_id,
+                        document_id: req.query?.document_id,
+                    });
+                    return res.json(result);
+                }
+                if (req.method === 'PUT' && action === 'status') {
+                    const result = await transaction(pool, (client) =>
+                        updateRentalApplicationStatus(
+                            client,
+                            user.id,
+                            body.id,
+                            String(body.status || ''),
+                        ),
+                    );
+                    return res.json({ application: result });
+                }
+                if (req.method === 'POST' && action === 'reconcile-payment') {
+                    const result = await reconcileRentalApplicationPayment(
+                        pool,
+                        body.id,
+                        stripeReady() ? stripeProvider() : null,
+                    );
+                    await audit(pool, user.id, 'ADMIN_RENTAL_PAYMENT_RECONCILED', {
+                        application_id: body.id,
+                        reconciled: !!result.reconciled,
+                        payment_status: result.payment_status,
+                    });
+                    return res.json(result);
+                }
+                if (req.method === 'GET' && action === 'fees')
+                    return res.json(await rentalFeeAdminSnapshot(pool));
+                if (req.method === 'PUT' && action === 'fees') {
+                    const result = await transaction(pool, (client) =>
+                        updateRentalFees(client, user.id, body),
+                    );
+                    return res.json({ config: result });
+                }
+                fail(400, 'Invalid rental admin action.');
+            }
+            if (resource === 'app-preview') {
+                const action = String(req.query?.action || 'list');
+                if (req.method === 'GET' && action === 'list')
+                    return res.json(await listAppPreviews(pool, req.query?.app_id || null));
+                if (req.method === 'POST' && action === 'begin-upload')
+                    return res.status(201).json(await beginAppPreviewUpload(pool, user.id, body));
+                if (req.method === 'POST' && action === 'complete-upload') {
+                    const result = await transaction(pool, (client) =>
+                        completeAppPreviewUpload(client, user.id, body),
+                    );
+                    return res.json({ preview: result });
+                }
+                if (req.method === 'PUT' && action === 'enabled') {
+                    const result = await transaction(pool, (client) =>
+                        setPreviewEnabled(client, user.id, body.app_id, !!body.enabled),
+                    );
+                    return res.json(result);
+                }
+                if (req.method === 'PUT' && action === 'activate') {
+                    const result = await transaction(pool, (client) =>
+                        activatePreviewVersion(client, user.id, body.preview_id),
+                    );
+                    return res.json(result);
+                }
+                fail(400, 'Invalid app preview action.');
+            }
             if (resource === 'admin' && req.method === 'GET') {
                 const [
                     apps,
@@ -478,7 +700,17 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     activity,
                     totals,
                 ] = await Promise.all([
-                    pool.query('SELECT id,slug,name,description,link,tech,status,is_published,sort_order,cover_image_url,(cover_preview_image IS NOT NULL) AS has_cover_preview,created_at,updated_at FROM apps ORDER BY sort_order,name'),
+                    pool.query(`SELECT a.id,a.slug,a.name,a.description,a.link,a.tech,a.status,a.is_published,a.sort_order,
+                               a.cover_image_url,(a.cover_preview_image IS NOT NULL) AS has_cover_preview,
+                               a.preview_enabled,p.public_url AS preview_url,p.version AS preview_version,
+                               a.created_at,a.updated_at
+                        FROM apps a
+                        LEFT JOIN LATERAL (
+                          SELECT public_url,version FROM app_previews
+                          WHERE app_id=a.id AND state='ready' AND is_active
+                          ORDER BY version DESC LIMIT 1
+                        ) p ON true
+                        ORDER BY a.sort_order,a.name`),
                     pool.query(
                         'SELECT id,email,name,role,is_active,failed_attempts,locked_until,created_at FROM users ORDER BY created_at DESC LIMIT 200',
                     ),

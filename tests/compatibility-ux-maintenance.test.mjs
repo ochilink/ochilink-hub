@@ -31,7 +31,7 @@ test('compatibility and UX baseline preserves responsive and accessibility safeg
   assert.match(landing, /"aria-modal":"true"/);
   assert.match(landing, /Close image preview/);
   assert.match(landing, /key==="Escape"/);
-  assert.match(landing, /focus:ring-\[\#00FFC2\]/);
+  assert.ok(landing.includes('#447E37') || landing.includes('var(--lime)'));
 
   for (const page of [landing, admin, booking]) {
     assert.match(page, /hub-mobile\.css/);

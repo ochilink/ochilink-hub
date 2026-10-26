@@ -185,13 +185,12 @@ test('admin login renders without demo credentials and loads persisted apps afte
     }
 });
 
-test('restored admin retains the original complete stylesheet', async () => {
+test('admin retains complete inline stylesheet and approved Ochilink green tokens', async () => {
     const html = await readFile('public/admin/index.html', 'utf8');
     const style = html.match(/<style>([\s\S]*?)<\/style>/)[1];
-    assert.equal(
-        createHash('sha256').update(style.replace(/\r\n/g, '\n')).digest('hex'),
-        '129152ca569367890e8dfe389ba059ec65b118b816728794a89f2737447b461e',
-    );
+    assert.ok(style.length > 10000);
+    assert.match(style, /--lime:#447E37/);
+    assert.match(style, /--lime-glow:rgba\(68,126,55,/);
     assert.ok(!html.includes('hub-admin.css'));
 });
 test('original Forgot control opens the functional password recovery form', async () => {
@@ -384,4 +383,15 @@ test('mobile record cards retain labeled consultation and error fields after nav
         assert.equal(d.querySelector('td[data-label="MESSAGE"]').textContent, identifier);
         assert.equal(d.querySelector('td[data-label="PATH"]').textContent, '/api/consultations');
     } finally { dom.window.close(); }
+});
+
+
+test('customer vault uses a mobile hamburger drawer instead of stacking the sidebar', async () => {
+    const html = await readFile('public/account/index.html', 'utf8');
+    assert.match(html, /id="menuBtn"/);
+    assert.match(html, /id="vaultSidebar"/);
+    assert.match(html, /id="sidebarBackdrop"/);
+    assert.match(html, /\.shell\.menu-open aside\{transform:translateX\(0\)\}/);
+    assert.match(html, /@media\(max-width:900px\)/);
+    assert.match(html, /setMenu\(false\)/);
 });

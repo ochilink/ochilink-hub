@@ -110,6 +110,12 @@ before(async () => {
             'utf8',
         ),
     );
+    await db.exec(
+        await readFile(
+            'database/migrations/016_app_preview_library.sql',
+            'utf8',
+        ),
+    );
     const passwordHash = await bcrypt.hash('a-test-password-for-tests', 4);
     adminId = (
         await pool.query(

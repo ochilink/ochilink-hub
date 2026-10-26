@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Rental Applications | Ochilink Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="referrer" content="no-referrer">
+  <style>
+    :root{--bg:#0b0f1a;--panel:#131a28;--panel2:#192235;--line:#27344d;--text:#edf4ff;--muted:#90a0b8;--lime:#447E37;--blue:#4da3ff;--amber:#f6c85f;--red:#ff6d7d}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}button,input,select{font:inherit}.admin-shell{min-height:100vh;display:grid;grid-template-columns:260px 1fr}.admin-sidebar{background:#080c16;border-right:1px solid var(--line);min-height:100vh;position:sticky;top:0;height:100vh;display:flex;flex-direction:column}.admin-brand{height:64px;display:flex;align-items:center;gap:10px;padding:0 18px;border-bottom:1px solid rgba(255,255,255,.08)}.admin-brand img{width:130px;height:auto}.admin-badge{margin-left:auto;font-size:9px;padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.1)}.admin-nav{padding:12px;display:grid;gap:5px}.admin-nav a{display:flex;align-items:center;gap:10px;height:38px;padding:0 12px;border-radius:10px;color:#cbd5e1;text-decoration:none;font:12px ui-monospace,SFMono-Regular,Menlo,monospace}.admin-nav a:hover{background:rgba(255,255,255,.08);color:#fff}.admin-nav a.active{background:#fff;color:#000;font-weight:700}.admin-main{min-width:0}.wrap{max-width:1450px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}.top h1{margin:0;font-size:28px}.top p{margin:6px 0 0;color:var(--muted)}.btn{border:1px solid var(--line);background:#172137;color:var(--text);border-radius:10px;padding:9px 12px;cursor:pointer;text-decoration:none}.btn:hover{border-color:#42597f}.primary{background:var(--lime);border-color:var(--lime);color:#061411;font-weight:800}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.input{background:#101827;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px}.search{flex:1;min-width:260px}.panel{border:1px solid var(--line);border-radius:16px;background:var(--panel);overflow:hidden}.tablewrap{overflow:auto}table{width:100%;border-collapse:collapse;min-width:1020px}th,td{padding:12px 14px;text-align:left;border-bottom:1px solid #202b40;font-size:13px}th{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.name{font-weight:700}.small{font-size:11px;color:var(--muted)}.status{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--line);font-size:11px}.paid{color:#7affdd;border-color:#1f6b5c;background:#123129}.unpaid{color:#ffd37a;border-color:#665225;background:#2d2718}.empty,.loading{padding:38px;text-align:center;color:var(--muted)}dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--text);width:min(920px,calc(100% - 30px));padding:0}dialog::backdrop{background:rgba(0,0,0,.68)}.modal{padding:22px}.modalhead{display:flex;justify-content:space-between;gap:16px;align-items:start}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}.box{background:#0f1724;border:1px solid var(--line);border-radius:12px;padding:12px}.label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}.value{margin-top:5px;font-size:13px;word-break:break-word}.docs{border:1px solid var(--line);border-radius:12px;overflow:hidden}.doc{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 12px;border-bottom:1px solid #202b40}.doc:last-child{border-bottom:0}.actions{display:flex;gap:8px;flex-wrap:wrap}.notice{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#eafcf7;color:#06261e;padding:10px 14px;border-radius:999px;font-size:12px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.25)}.error{background:#3a151c;color:#ffdfe5}.hidden{display:none!important}.admin-mobilebar,.admin-backdrop{display:none}
+    @media(max-width:900px){.admin-shell{display:block}.admin-sidebar{position:fixed;inset:0 auto 0 0;width:min(82vw,320px);height:100dvh;min-height:100dvh;z-index:40;transform:translateX(-105%);transition:transform .22s ease;box-shadow:18px 0 48px rgba(0,0,0,.38);overflow-y:auto}.admin-shell.menu-open .admin-sidebar{transform:translateX(0)}.admin-nav{grid-template-columns:1fr}.admin-brand{height:64px}.admin-backdrop{display:block;position:fixed;inset:0;border:0;background:rgba(0,0,0,.58);z-index:39;opacity:0;pointer-events:none;transition:opacity .22s ease}.admin-shell.menu-open .admin-backdrop{opacity:1;pointer-events:auto}.admin-mobilebar{display:flex;position:sticky;top:0;z-index:30;height:60px;align-items:center;gap:12px;padding:0 14px;border-bottom:1px solid var(--line);background:rgba(11,15,26,.96);backdrop-filter:blur(14px)}.admin-menu-btn{width:42px;height:42px;display:grid;place-items:center;padding:0;font-size:20px}.admin-mobile-title{font-weight:800}.wrap{padding-top:18px}}@media(max-width:760px){.wrap{padding:14px}.top{display:block}.top .actions{margin-top:12px}.grid{grid-template-columns:1fr}.toolbar{display:grid;grid-template-columns:1fr}.search{min-width:0}#feePanel>div{display:block!important}#feePanel .actions{display:grid;grid-template-columns:1fr;width:100%;margin-top:14px}#feePanel .input,#feePanel .btn{width:100%;min-width:0}}
+  </style>
+</head>
+<body>
+<div class="admin-shell">
+  <aside id="adminSidebar" class="admin-sidebar" aria-label="Admin navigation">
+    <div class="admin-brand"><img src="/assets/ochilink-final-logo.svg" alt="Ochilink"><span class="admin-badge">ADMIN</span></div>
+    <nav class="admin-nav">
+      <a href="/admin/">◧ Dashboard</a>
+      <a href="/admin/">◫ Apps</a>
+      <a href="/admin/">◐ Users</a>
+      <a href="/admin/">◑ Security Logs</a>
+      <a href="/admin/">⚠ Error Logs</a>
+      <a href="/admin/">◭ Analytics</a>
+      <a href="/admin/">◎ Consultations</a>
+      <a class="active" href="/admin/rentals/">▤ Rental Applications</a>
+      <a href="/admin/">⚙ Settings</a>
+    </nav>
+  </aside>
+  <button id="adminBackdrop" class="admin-backdrop" type="button" aria-label="Close Admin navigation" tabindex="-1"></button>
+  <main class="admin-main">
+    <div class="admin-mobilebar">
+      <button id="adminMenuBtn" class="btn admin-menu-btn" type="button" aria-label="Open Admin navigation" aria-controls="adminSidebar" aria-expanded="false">☰</button>
+      <div class="admin-mobile-title">Rental Applications</div>
+    </div>
+<div class="wrap">
+  <div class="top">
+    <div><h1>Rental Applications</h1><p>Review PASS applications, payment state, customer accounts, and linked documents.</p></div>
+    <div class="actions"><a class="btn" href="/admin/">← Main Admin</a><a class="btn" href="/rental-application/" target="_blank" rel="noopener">Open PASS ↗</a></div>
+  </div>
+  <div id="feePanel" class="panel" style="padding:16px;margin-bottom:16px">
+    <div style="display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap">
+      <div><strong>Rental fee configuration</strong><div class="small">Server-controlled values used by PASS and Stripe Checkout.</div></div>
+      <div class="actions">
+        <input id="feeApplication" class="input" type="number" min="0" step="0.01" placeholder="Application fee">
+        <input id="feePercent" class="input" type="number" min="0" max="100" step="0.1" placeholder="Processing %">
+        <input id="feeFixed" class="input" type="number" min="0" step="0.01" placeholder="Fixed fee">
+        <button id="saveFees" class="btn primary">Save fees</button>
+      </div>
+    </div>
+    <div id="feeMeta" class="small" style="margin-top:10px"></div>
+  </div>
+  <div class="toolbar">
+    <input id="search" class="input search" placeholder="Search applicant, email, property, or application ID">
+    <select id="status" class="input">
+      <option value="all">All statuses</option><option value="submitted">Submitted</option><option value="under_review">Under review</option><option value="additional_information_required">Additional information required</option><option value="approved">Approved</option><option value="denied">Denied</option><option value="withdrawn">Withdrawn</option><option value="pending_payment">Pending payment</option><option value="payment_expired">Payment expired</option><option value="archived">Archived</option>
+    </select>
+    <button id="refresh" class="btn">Refresh</button>
+  </div>
+  <div class="panel">
+    <div id="loading" class="loading">Loading rental applications…</div>
+    <div id="empty" class="empty hidden">No rental applications found.</div>
+    <div class="tablewrap">
+      <table id="table" class="hidden">
+        <thead><tr><th>Applicant</th><th>Property</th><th>Status</th><th>Payment</th><th>Total</th><th>Documents</th><th>Submitted</th><th></th></tr></thead>
+        <tbody id="body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<dialog id="detail">
+  <div class="modal">
+    <div class="modalhead"><div><h2 id="detailTitle" style="margin:0">Rental Application</h2><div id="detailId" class="small"></div></div><button id="close" class="btn">Close</button></div>
+    <div id="detailGrid" class="grid"></div>
+    <div class="actions" style="margin-bottom:16px">
+      <select id="detailStatus" class="input">
+        <option value="submitted">Submitted</option><option value="under_review">Under review</option><option value="additional_information_required">Additional information required</option><option value="approved">Approved</option><option value="denied">Denied</option><option value="withdrawn">Withdrawn</option><option value="archived">Archived</option>
+      </select>
+      <button id="saveStatus" class="btn primary">Save status</button>
+      <button id="reconcilePayment" class="btn">Reconcile Payment</button>
+    </div>
+    <h3>Linked documents</h3>
+    <div id="docs" class="docs"></div>
+  </div>
+</dialog>
+<div id="notice" class="notice hidden"></div>
+<script>
+const $=s=>document.querySelector(s);let timer,current=null;
+const adminShell=$('.admin-shell'),adminMenuBtn=$('#adminMenuBtn'),adminBackdrop=$('#adminBackdrop');
+function setAdminMenu(open){adminShell.classList.toggle('menu-open',open);adminMenuBtn.setAttribute('aria-expanded',String(open));adminMenuBtn.setAttribute('aria-label',open?'Close Admin navigation':'Open Admin navigation')}
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function money(c,currency='usd'){return new Intl.NumberFormat('en-US',{style:'currency',currency:String(currency).toUpperCase()}).format(Number(c||0)/100)}
+function toast(msg,error=false){const n=$('#notice');n.textContent=msg;n.classList.toggle('error',error);n.classList.remove('hidden');setTimeout(()=>n.classList.add('hidden'),5000)}
+async function api(action,{method='GET',body,query={}}={}){const u=new URL('/api/hub',location.origin);u.searchParams.set('resource','rental-admin');u.searchParams.set('action',action);Object.entries(query).forEach(([k,v])=>{if(v!=null&&v!=='')u.searchParams.set(k,v)});const init={method,headers:{}};if(body!==undefined){init.headers['Content-Type']='application/json';init.body=JSON.stringify(body)}const r=await fetch(u,init);const j=await r.json().catch(()=>({}));if(!r.ok){if(r.status===401){location.href='/admin/';throw new Error('Admin session expired.')}throw new Error(j.error||'Request failed.')}return j}
+async function loadFees(){try{const j=await api('fees');const c=j.config;$('#feeApplication').value=(Number(c.application_fee_cents||0)/100).toFixed(2);$('#feePercent').value=Number(c.processing_percent||0);$('#feeFixed').value=(Number(c.processing_fixed_cents||0)/100).toFixed(2);$('#feeMeta').textContent='Last updated '+new Date(c.updated_at).toLocaleString()+' · '+j.history.length+' history record'+(j.history.length===1?'':'s')}catch(e){toast(e.message,true)}}
+async function load(){try{$('#loading').classList.remove('hidden');$('#table').classList.add('hidden');$('#empty').classList.add('hidden');const j=await api('list',{query:{q:$('#search').value,status:$('#status').value}});$('#loading').classList.add('hidden');if(!j.applications.length){$('#empty').classList.remove('hidden');return}$('#body').innerHTML=j.applications.map(a=>`<tr><td><div class="name">${esc(a.applicant_name)}</div><div class="small">${esc(a.applicant_email)}</div></td><td>${esc(a.property_address||'—')}</td><td><span class="status">${esc(a.status)}</span></td><td><span class="status ${a.payment_status==='paid'?'paid':'unpaid'}">${esc(a.payment_status)}</span></td><td>${money(a.total_cents,a.currency)}</td><td>${Number(a.document_count||0)}</td><td>${a.submitted_at?new Date(a.submitted_at).toLocaleString():'—'}</td><td><button class="btn" data-id="${a.id}">Review</button></td></tr>`).join('');$('#table').classList.remove('hidden')}catch(e){toast(e.message,true);$('#loading').textContent=e.message}}
+async function openDetail(id){try{const j=await api('detail',{query:{id}});current=j.application;const a=j.application;$('#detailTitle').textContent=a.applicant_name||'Rental Application';$('#detailId').textContent='Application '+a.id;$('#detailStatus').value=['submitted','under_review','additional_information_required','approved','denied','withdrawn','archived'].includes(a.status)?a.status:'submitted';$('#detailGrid').innerHTML=[['Applicant email',a.applicant_email],['Phone',a.applicant_phone||'—'],['Property',a.property_address||'—'],['Payment',a.payment_status],['Total',money(a.total_cents,a.currency)],['Customer account',a.customer_email||'Not linked'],['Paid',a.paid_at?new Date(a.paid_at).toLocaleString():'—'],['Submitted',a.submitted_at?new Date(a.submitted_at).toLocaleString():'—'],['Stripe payment intent',a.stripe_payment_intent||'—']].map(([k,v])=>`<div class="box"><div class="label">${esc(k)}</div><div class="value">${esc(v)}</div></div>`).join('');$('#reconcilePayment').classList.toggle('hidden',a.payment_status==='paid');$('#docs').innerHTML=j.documents.length?j.documents.map(d=>`<div class="doc"><div><div class="name">${esc(d.original_name)}</div><div class="small">${esc(d.folder_name||'No folder')} · ${esc(d.content_type)} · ${Math.round(Number(d.byte_size||0)/1024)} KB ${d.trashed_at?'· Trashed':''}</div></div><div>${d.state==='ready'&&!d.trashed_at?'<button class="btn" data-doc="'+d.id+'">Open</button>':'<span class="small">'+esc(d.state)+'</span>'}</div></div>`).join(''):'<div class="empty">No documents linked to this application.</div>';$('#detail').showModal()}catch(e){toast(e.message,true)}}
+adminMenuBtn.addEventListener('click',()=>setAdminMenu(!adminShell.classList.contains('menu-open')));
+adminBackdrop.addEventListener('click',()=>setAdminMenu(false));
+document.querySelector('.admin-nav').addEventListener('click',e=>{if(e.target.closest('a'))setAdminMenu(false)});
+window.addEventListener('keydown',e=>{if(e.key==='Escape')setAdminMenu(false)});
+window.addEventListener('resize',()=>{if(window.innerWidth>900)setAdminMenu(false)});
+$('#body').addEventListener('click',e=>{const b=e.target.closest('[data-id]');if(b)openDetail(b.dataset.id)});
+$('#docs').addEventListener('click',async e=>{const b=e.target.closest('[data-doc]');if(!b||!current)return;try{const j=await api('download',{query:{application_id:current.id,document_id:b.dataset.doc}});location.href=j.url}catch(err){toast(err.message,true)}});
+$('#saveStatus').addEventListener('click',async()=>{if(!current)return;try{await api('status',{method:'PUT',body:{id:current.id,status:$('#detailStatus').value}});toast('Application status updated.');$('#detail').close();await load()}catch(e){toast(e.message,true)}});
+$('#reconcilePayment').addEventListener('click',async()=>{if(!current)return;const b=$('#reconcilePayment');b.disabled=true;b.textContent='Checking Stripe…';try{const j=await api('reconcile-payment',{method:'POST',body:{id:current.id}});if(j.reconciled||j.payment_status==='paid')toast('Stripe payment verified and application finalized.');else toast('Stripe still reports this Checkout Session as '+(j.stripe_payment_status||j.payment_status)+'.',true);$('#detail').close();await load();await openDetail(current.id)}catch(e){toast(e.message,true)}finally{b.disabled=false;b.textContent='Reconcile Payment'}});
+$('#saveFees').addEventListener('click',async()=>{try{const application=Math.round(Number($('#feeApplication').value)*100),percent=Number($('#feePercent').value),fixed=Math.round(Number($('#feeFixed').value)*100);if(!Number.isFinite(application)||!Number.isFinite(percent)||!Number.isFinite(fixed))throw new Error('Enter valid fee values.');await api('fees',{method:'PUT',body:{application_fee_cents:application,processing_percent:percent,processing_fixed_cents:fixed}});toast('Rental fees updated.');await loadFees()}catch(e){toast(e.message,true)}});
+$('#close').addEventListener('click',()=>$('#detail').close());$('#refresh').addEventListener('click',()=>{load();loadFees()});$('#status').addEventListener('change',load);$('#search').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(load,300)});load();loadFees();
+</script>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,89 @@
+:root {
+    --bg:#F8FAFC;
+    --card:#FFFFFF;
+    --border:#CBD5E1;
+    --text:#0F172A;
+    --muted:#64748B;
+    --muted-2:#94A3B8;
+    --green:#447E37;
+    --green-dark:#35672D;
+    --green-light:rgba(68,126,55,.16);
+    --green-ring:rgba(68,126,55,.24);
+    --sidebar-bg:#FFFFFF;
+    --input-bg:#FFFFFF;
+    --input-border:#94A3B8;
+}
+[data-theme=dark] {
+    --bg:#0B0F1A;
+    --card:#141B2A;
+    --border:#334155;
+    --text:#F8FAFC;
+    --muted:#CBD5E1;
+    --muted-2:#94A3B8;
+    --green:#447E37;
+    --green-dark:#35672D;
+    --green-light:rgba(68,126,55,.14);
+    --green-ring:rgba(68,126,55,.28);
+    --sidebar-bg:#101725;
+    --input-bg:#141B2A;
+    --input-border:#475569;
+}
+html,body,button,input,select,textarea {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;
+}
+.serif,.font-serif {
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif !important;
+    font-weight:700 !important;
+    letter-spacing:-.02em;
+}
+body { background:var(--bg); color:var(--text); }
+header { border-color:var(--border) !important; }
+input,select,textarea {
+    border-color:var(--input-border) !important;
+    background:var(--input-bg) !important;
+    color:var(--text) !important;
+}
+input::placeholder,textarea::placeholder { color:var(--muted-2) !important; opacity:1; }
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible {
+    outline:2px solid var(--green) !important;
+    outline-offset:2px;
+}
+
+@media (max-width: 767px) {
+    .rental-header {
+        height:auto !important;
+        min-height:108px;
+        display:grid !important;
+        grid-template-columns:auto minmax(0,1fr);
+        grid-template-areas:
+            "brand brand"
+            "menu actions";
+        gap:8px 12px;
+        padding-top:10px !important;
+        padding-bottom:10px !important;
+        align-items:center;
+    }
+    .rental-header-brand-group {
+        display:contents !important;
+    }
+    .rental-header-logo {
+        grid-area:brand;
+        justify-self:center;
+    }
+    .rental-menu-button {
+        grid-area:menu;
+        justify-self:start;
+    }
+    .rental-header-actions {
+        grid-area:actions;
+        justify-self:end;
+        min-width:0;
+        gap:8px !important;
+    }
+    .rental-header-actions > button {
+        flex-shrink:0;
+    }
+    .rental-header-signout {
+        display:none !important;
+    }
+}

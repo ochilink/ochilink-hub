@@ -21,6 +21,9 @@ test('database recovery verification remains read-only and tracks current schema
     '011_normalize_extra_catalog_apps',
     '012_inline_app_cover_images',
     '013_high_res_app_cover_previews',
+    '014_rental_application',
+    '015_activate_rental_document_apps',
+    '016_app_preview_library',
   ];
 
   for (const version of expected) {
