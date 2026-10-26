@@ -4,7 +4,7 @@ import { useMfa, encryptionReady } from '../lib/security.js';
 import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
-import { createRentalCheckout, getRentalFees, rentalApplicationStatus, latestCustomerRentalApplication } from '../lib/rental.js';
+import { createRentalCheckout, getRentalFees, rentalApplicationStatus, latestCustomerRentalApplication, reconcileRentalApplicationPayment } from '../lib/rental.js';
 import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, rentalFeeAdminSnapshot, updateRentalApplicationStatus, updateRentalFees } from '../lib/rental-admin.js';
 import { activatePreviewVersion, beginAppPreviewUpload, completeAppPreviewUpload, listAppPreviews, setPreviewEnabled } from '../lib/app-previews.js';
 import {
@@ -627,6 +627,19 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                         ),
                     );
                     return res.json({ application: result });
+                }
+                if (req.method === 'POST' && action === 'reconcile-payment') {
+                    const result = await reconcileRentalApplicationPayment(
+                        pool,
+                        body.id,
+                        stripeReady() ? stripeProvider() : null,
+                    );
+                    await audit(pool, user.id, 'ADMIN_RENTAL_PAYMENT_RECONCILED', {
+                        application_id: body.id,
+                        reconciled: !!result.reconciled,
+                        payment_status: result.payment_status,
+                    });
+                    return res.json(result);
                 }
                 fail(400, 'Invalid rental admin action.');
             }
