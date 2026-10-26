@@ -315,7 +315,49 @@ async function downloadApplicationPdf(id){
     : [['References','None listed']],state);
   addPdfSection(doc,'Emergency Contact',[['Name',properCase(d.emergency?.name)],['Phone',d.emergency?.phone],['Relationship',properCase(d.emergency?.rel)],['Address',d.emergency?.address]],state);
   addPdfSection(doc,'Screening',[['Eviction',yesNoCase(d.screening?.eviction)],['Bankruptcy',yesNoCase(d.screening?.bankruptcy)],['Criminal convictions',yesNoCase(d.screening?.criminal)],['Smoking',yesNoCase(d.screening?.smoking)],['Pets',yesNoCase(d.screening?.pets)],['Pet details',sentenceCase(d.screening?.petsDetail)]],state);
-  addPdfSection(doc,'Payment',[['Application Fee',money(payload.application_fee_cents,payload.currency)],['Processing Fee',money(payload.processing_fee_cents,payload.currency)],['Total Paid',money(payload.total_cents,payload.currency)],['Signature',d.payment?.signature]],state);
+  addPdfSection(doc,'Application Fee & Payment',[
+    ['Application Fee',money(payload.application_fee_cents,payload.currency)],
+    ['Processing Fee',money(payload.processing_fee_cents,payload.currency)],
+    ['Total Paid',money(payload.total_cents,payload.currency)],
+    ['Payment Status','Paid'],
+  ],state);
+
+  const addDisclosure=(title,paragraphs)=>{
+    const pageBottom=748,left=42,right=570,width=right-left;
+    const ensure=(needed=40)=>{if(state.y+needed>pageBottom){doc.addPage();state.y=50}};
+    ensure(54);
+    doc.setTextColor(68,126,55);doc.setFont('helvetica','bold');doc.setFontSize(12);
+    doc.text(title.toUpperCase(),left,state.y);
+    doc.setDrawColor(68,126,55);doc.setLineWidth(1);doc.line(left,state.y+5,right,state.y+5);
+    state.y+=18;
+    doc.setTextColor(35,45,58);doc.setFont('helvetica','normal');doc.setFontSize(9.5);
+    for(const paragraph of paragraphs){
+      const lines=doc.splitTextToSize(paragraph,width);
+      ensure(lines.length*12+14);
+      doc.text(lines,left,state.y);
+      state.y+=lines.length*12+10;
+    }
+    state.y+=4;
+  };
+
+  addDisclosure('Application Fee & Payment',[
+    'A non-refundable Application Fee of $150.00 per applicant is payable at the time this application is submitted. The Application Fee covers the cost of processing and screening this application.',
+    'Applicants paying by card are charged Stripe’s standard processing fee of 2.9% + $0.30 in addition to the Application Fee. On the $150.00 Application Fee, the processing fee is $4.65.',
+    'Application Fee $150.00 + Processing Fee $4.65 = Total Due $154.65',
+    'This application will not be processed until payment is received. The Application Fee and any processing fee are non-refundable regardless of the outcome of this application, including if the application is denied or withdrawn.',
+  ]);
+
+  addDisclosure('Authorization, Acknowledgment & Signature',[
+    'By signing below, I certify that the information in this application is true and complete. I authorize the landlord / property manager and its agents to verify this information, including contacting employers, landlords, and references, and to obtain consumer reports — including credit, criminal background, and rental / eviction history — in connection with this application and, if approved, during the tenancy, as permitted by the Fair Credit Reporting Act (15 U.S.C. § 1681) and applicable Florida law. I understand that providing false, incomplete, or misleading information, including failure to disclose all occupants or pets, may be grounds for denial or, if discovered after move-in, for termination of the tenancy.',
+    'I understand that the application fee, if any, is non-refundable and covers the cost of processing and screening. Submission of this application does not guarantee approval or reserve the property. Approval is subject to verification, screening criteria, and availability, consistent with the Florida Fair Housing Act (Fla. Stat. § 760.23) and the Fair Housing Act.',
+  ]);
+
+  addPdfSection(doc,'Signature',[
+    ['Applicant Signature',d.payment?.signature],
+    ['Print Name',properCase(personal.fullName)],
+    ['Date',payload.submitted_at?new Date(payload.submitted_at).toLocaleDateString():'—'],
+  ],state);
+
   const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(110,118,129);doc.text('Ochilink • Secure Rental Application • Page '+p+' of '+pages,42,770)}
   doc.save('ochilink-rental-application-'+String(payload.application_id||'copy').slice(0,8)+'.pdf');
 }
