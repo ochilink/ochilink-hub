@@ -18,6 +18,20 @@
     .total{font-size:18px;font-weight:800;color:var(--green)}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}.btn{appearance:none;border:1px solid var(--border);border-radius:999px;padding:13px 20px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:var(--green);border-color:var(--green);color:white}.secondary{background:transparent;color:white}.note{margin-top:18px;color:var(--muted);font-size:12px;line-height:1.5}.ref{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
     @media(max-width:640px){.card{padding:26px 20px}.top{padding:0}.logo{width:128px}h1{font-size:31px}.actions{flex-direction:column}.btn{width:100%}}
   </style>
+<script>
+(async()=>{
+  try{
+    const r=await fetch('/api/hub?resource=canonical-origin',{cache:'no-store'});
+    if(r.ok){
+      const {origin}=await r.json();
+      if(origin && origin!==location.origin){
+        location.replace(origin+location.pathname+location.search+location.hash);
+        return;
+      }
+    }
+  }catch{}
+})();
+</script>
 </head>
 <body>
   <div class="wrap">
