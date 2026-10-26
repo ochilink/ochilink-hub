@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Thank You | Ochilink Rental Application</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="referrer" content="no-referrer">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <style>
+    :root{--bg:#0B0F1A;--card:#141B2A;--border:#334155;--text:#F8FAFC;--muted:#CBD5E1;--green:#447E37;--green-dark:#35672D;--green-light:rgba(68,126,55,.16)}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+    .wrap{min-height:100vh;padding:28px 18px 60px}.top{max-width:980px;margin:0 auto 28px;display:flex;justify-content:space-between;align-items:center}
+    .logo{width:150px;height:auto}.card{max-width:780px;margin:0 auto;background:var(--card);border:1px solid var(--border);border-radius:24px;padding:38px;box-shadow:0 20px 55px rgba(0,0,0,.28)}
+    .check{width:70px;height:70px;border-radius:50%;display:grid;place-items:center;background:var(--green-light);color:var(--green);font-size:34px;font-weight:800;margin-bottom:20px}
+    h1{font-size:38px;line-height:1.08;margin:0 0 10px}.lead{color:var(--muted);font-size:16px;line-height:1.6;margin:0 0 28px}
+    .summary{border:1px solid var(--border);border-radius:16px;overflow:hidden;margin:22px 0}.row{display:flex;justify-content:space-between;gap:18px;padding:14px 16px;border-bottom:1px solid var(--border);font-size:14px}.row:last-child{border-bottom:0}.row strong{color:#fff}.label{color:var(--muted)}
+    .total{font-size:18px;font-weight:800;color:var(--green)}.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}.btn{appearance:none;border:1px solid var(--border);border-radius:999px;padding:13px 20px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}.primary{background:var(--green);border-color:var(--green);color:white}.secondary{background:transparent;color:white}.note{margin-top:18px;color:var(--muted);font-size:12px;line-height:1.5}.ref{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+    @media(max-width:640px){.card{padding:26px 20px}.top{padding:0 4px}.logo{width:128px}h1{font-size:31px}.actions{flex-direction:column}.btn{width:100%}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <img src="/assets/ochilink-final-logo.svg" alt="Ochilink" class="logo">
+    </div>
+    <main class="card">
+      <div class="check">✓</div>
+      <h1>Thank you. Your application was submitted.</h1>
+      <p class="lead">Your payment has been verified and your Ochilink rental application was submitted securely. Keep a PDF copy for your records, then continue to your Ochilink account to manage documents and application updates.</p>
+      <div class="summary">
+        <div class="row"><span class="label">Application reference</span><strong class="ref" id="applicationRef">—</strong></div>
+        <div class="row"><span class="label">Applicant</span><strong id="applicantName">—</strong></div>
+        <div class="row"><span class="label">Property</span><strong id="propertyAddress">—</strong></div>
+        <div class="row"><span class="label">Status</span><strong id="status">Submitted</strong></div>
+        <div class="row"><span class="label">Total paid</span><strong class="total" id="totalPaid">—</strong></div>
+      </div>
+      <div class="actions">
+        <button class="btn primary" id="downloadPdf">Download Application PDF</button>
+        <a class="btn secondary" href="/account/">Open My Account</a>
+      </div>
+      <p class="note">Your application data is encrypted in Ochilink. The PDF is generated in your browser from the verified application returned after payment.</p>
+    </main>
+  </div>
+<script>
+(function(){
+  const raw=sessionStorage.getItem('ochi_rental_thank_you');
+  if(!raw){ location.replace('/rental-application/'); return; }
+  let payload;
+  try{ payload=JSON.parse(raw); }catch{ location.replace('/rental-application/'); return; }
+  const d=payload.application_data||{}, personal=d.personal||{}, property=d.property||{};
+  const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:String(payload.currency||'usd').toUpperCase()}).format(Number(v||0)/100);
+  document.getElementById('applicationRef').textContent=payload.application_id||'—';
+  document.getElementById('applicantName').textContent=personal.fullName||'—';
+  document.getElementById('propertyAddress').textContent=property.address||'—';
+  document.getElementById('status').textContent=payload.status==='submitted'?'Submitted':(payload.status||'Submitted');
+  document.getElementById('totalPaid').textContent=money(payload.total_cents);
+
+  const safe=v=>String(v??'').trim()||'—';
+  const addSection=(doc,title,items,state)=>{
+    if(state.y>720){doc.addPage();state.y=55}
+    doc.setTextColor(68,126,55);doc.setFont('helvetica','bold');doc.setFontSize(13);doc.text(title,42,state.y);state.y+=18;
+    doc.setTextColor(35,45,58);doc.setFont('helvetica','normal');doc.setFontSize(10);
+    for(const [label,value] of items){
+      const lines=doc.splitTextToSize(label+': '+safe(value),510);
+      if(state.y+lines.length*14>760){doc.addPage();state.y=55}
+      doc.text(lines,42,state.y);state.y+=lines.length*14+3;
+    }
+    state.y+=8;
+  };
+  async function logoData(){
+    const svg=await fetch('/assets/ochilink-final-logo.svg',{cache:'force-cache'}).then(r=>r.text());
+    const blob=new Blob([svg],{type:'image/svg+xml'});
+    const url=URL.createObjectURL(blob);
+    try{
+      const img=new Image();
+      await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});
+      const canvas=document.createElement('canvas');canvas.width=900;canvas.height=200;
+      const ctx=canvas.getContext('2d');ctx.drawImage(img,0,0,900,200);
+      return canvas.toDataURL('image/png');
+    }finally{URL.revokeObjectURL(url)}
+  }
+  document.getElementById('downloadPdf').addEventListener('click',async()=>{
+    const btn=document.getElementById('downloadPdf');btn.disabled=true;btn.textContent='Preparing PDF…';
+    try{
+      if(!window.jspdf?.jsPDF) throw new Error('PDF library unavailable');
+      const {jsPDF}=window.jspdf, doc=new jsPDF({unit:'pt',format:'letter'});
+      const green=[68,126,55];
+      try{doc.addImage(await logoData(),'PNG',42,34,165,37)}catch{doc.setTextColor(...green);doc.setFontSize(22);doc.setFont('helvetica','bold');doc.text('ochilink',42,58)}
+      doc.setDrawColor(...green);doc.setLineWidth(2);doc.line(42,84,570,84);
+      doc.setTextColor(17,24,39);doc.setFont('helvetica','bold');doc.setFontSize(20);doc.text('Rental Application',42,116);
+      doc.setFontSize(10);doc.setFont('helvetica','normal');
+      doc.text('Application reference: '+safe(payload.application_id),42,136);
+      doc.text('Status: Submitted • Payment verified: '+money(payload.total_cents),42,152);
+      const state={y:184};
+      addSection(doc,'Property Details',[
+        ['Address',property.address],['Unit / Apt',property.unit],['Lease Term',property.leaseTerm],['Move-in Date',property.moveIn]
+      ],state);
+      addSection(doc,'Personal Information',[
+        ['Full Legal Name',personal.fullName],['Email',personal.email],['Phone',personal.phone],['DOB',personal.dob],['SSN Last 4',personal.ssn],['Driver License',personal.license]
+      ],state);
+      addSection(doc,'Employment',[
+        ['Employer',d.employment?.employer],['Position',d.employment?.position],['Monthly Income',d.employment?.income],['Supervisor',d.employment?.supervisor],['Years There',d.employment?.years]
+      ],state);
+      addSection(doc,'Emergency Contact',[
+        ['Name',d.emergency?.name],['Phone',d.emergency?.phone],['Relationship',d.emergency?.rel],['Address',d.emergency?.address]
+      ],state);
+      addSection(doc,'Occupants',(d.occupants||[]).length?(d.occupants||[]).map((x,i)=>['Occupant '+(i+1),[x.name,x.age&&'Age '+x.age,x.relationship].filter(Boolean).join(' • ')]):[['Occupants','None listed']],state);
+      addSection(doc,'Vehicles',(d.vehicles||[]).length?(d.vehicles||[]).map((x,i)=>['Vehicle '+(i+1),[x.year,x.make,x.model,x.plate].filter(Boolean).join(' ')]):[['Vehicles','None listed']],state);
+      addSection(doc,'Residential History',(d.residential||[]).length?(d.residential||[]).map((x,i)=>['Address '+(i+1),[x.address,x.landlord&&'Landlord '+x.landlord,x.rent&&'Rent '+x.rent,x.from&&'From '+x.from,x.to&&'To '+x.to,x.reason&&'Reason '+x.reason].filter(Boolean).join(' • ')]):[['History','None listed']],state);
+      addSection(doc,'References',(d.references||[]).map((x,i)=>['Reference '+(i+1),[x.name,x.phone,x.rel].filter(Boolean).join(' • ')]),state);
+      addSection(doc,'Screening',[
+        ['Eviction',d.screening?.eviction],['Bankruptcy',d.screening?.bankruptcy],['Criminal convictions',d.screening?.criminal],['Smoking',d.screening?.smoking],['Pets',d.screening?.pets],['Pet details',d.screening?.petsDetail]
+      ],state);
+      addSection(doc,'Payment',[
+        ['Application Fee',money(payload.application_fee_cents)],['Processing Fee',money(payload.processing_fee_cents)],['Total Paid',money(payload.total_cents)],['Signature',d.payment?.signature]
+      ],state);
+      const pages=doc.getNumberOfPages();
+      for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(110,118,129);doc.text('Ochilink • Secure Rental Application • Page '+p+' of '+pages,42,770)}
+      doc.save('ochilink-rental-application-'+String(payload.application_id||'copy').slice(0,8)+'.pdf');
+    }catch(e){alert('Unable to generate the PDF right now. Please open My Account and try again.')}
+    finally{btn.disabled=false;btn.textContent='Download Application PDF'}
+  });
+})();
+</script>
+</body>
+</html>
