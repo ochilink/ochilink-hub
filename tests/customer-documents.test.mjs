@@ -143,3 +143,18 @@ test('rental PDF standardizes display casing without mutating stored data', () =
   assert.match(account, /properCase\(x\.rel\)/);
   assert.match(account, /yesNoCase\(d\.screening\?\.eviction\)/);
 });
+
+
+test('rental PDF universally formats human-readable display text', () => {
+  const account = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+  assert.match(account, /const sentenceCase=/);
+  assert.match(account, /const emailCase=/);
+  assert.match(account, /const professionalCase=/);
+  assert.match(account, /emailCase\(personal\.email\)/);
+  assert.match(account, /properCase\(x\.make\)/);
+  assert.match(account, /properCase\(x\.model\)/);
+  assert.match(account, /properCase\(d\.employment\?\.supervisor\)/);
+  assert.match(account, /properCase\(x\.landlord\)/);
+  assert.match(account, /sentenceCase\(x\.rent\)/);
+  assert.match(account, /sentenceCase\(x\.reason\)/);
+});
