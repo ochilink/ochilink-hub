@@ -141,6 +141,29 @@
       <div class="modalactions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" type="submit">Create folder</button></div>
     </form>
   </dialog>
+  <dialog id="organizeDialog">
+    <form id="organizeForm" class="modal">
+      <h2 style="margin:0">Organize document</h2>
+      <p id="organizeName" class="small"></p>
+      <div class="row">
+        <label class="small" for="organizeFolder">Folder</label>
+        <select id="organizeFolder" class="field"><option value="">No folder</option></select>
+        <label class="small" for="organizeApplication">Rental application</label>
+        <select id="organizeApplication" class="field"><option value="">Not linked</option></select>
+        <label class="small" for="organizeType">Document category</label>
+        <select id="organizeType" class="field">
+          <option value="identity">Identity</option>
+          <option value="income">Income</option>
+          <option value="bank_statement">Bank Statement</option>
+          <option value="employment">Employment</option>
+          <option value="rental_history">Rental History</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="modalactions"><button type="button" class="btn" data-close>Cancel</button><button class="btn primary" type="submit">Save</button></div>
+    </form>
+  </dialog>
+
 
 <script>
 const api = '/api/hub';
@@ -375,7 +398,7 @@ function render(){
     <td>${x.uploaded_at?new Date(x.uploaded_at).toLocaleDateString():'Pending'}</td>
     <td><div class="actions">
       ${x.state==='ready'&&state.filter!=='trash'?'<button class="btn mini" data-download="'+x.id+'">Open</button>':''}
-      ${state.filter==='trash'?'<button class="btn mini" data-action="restore" data-id="'+x.id+'">Restore</button>':`<button class="btn mini" data-action="${x.starred?'unstar':'star'}" data-id="${x.id}">${x.starred?'Unstar':'Star'}</button><button class="btn mini danger" data-action="trash" data-id="${x.id}">Trash</button>`}
+      ${state.filter==='trash'?'<button class="btn mini" data-action="restore" data-id="'+x.id+'">Restore</button>':`<button class="btn mini" data-organize="${x.id}">Organize</button><button class="btn mini" data-action="${x.starred?'unstar':'star'}" data-id="${x.id}">${x.starred?'Unstar':'Star'}</button><button class="btn mini danger" data-action="trash" data-id="${x.id}">Trash</button>`}
       ${x.state!=='ready'?'<span class="tag pending">Pending</span>':''}
     </div></td></tr>`).join('');
   $('#emptyFiles').classList.toggle('hidden',d.documents.length>0);
@@ -389,7 +412,39 @@ function render(){
   }));
   $('#folderSelect').innerHTML='<option value="">No folder</option>'+d.folders.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('');
   $('#applicationSelect').innerHTML='<option value="">No application</option>'+d.applications.map(a=>`<option value="${a.id}">${esc(a.property_address||a.id)}</option>`).join('');
+  $('#organizeFolder').innerHTML='<option value="">No folder</option>'+d.folders.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('');
+  $('#organizeApplication').innerHTML='<option value="">Not linked</option>'+d.applications.map(a=>`<option value="${a.id}">${esc(a.property_address||a.id)}</option>`).join('');
 }
+let organizeDocumentId=null;
+filesBody.addEventListener('click',e=>{
+  const btn=e.target.closest('[data-organize]');
+  if(!btn)return;
+  const doc=state.data.documents.find(x=>x.id===btn.dataset.organize);
+  if(!doc)return;
+  organizeDocumentId=doc.id;
+  $('#organizeName').textContent=doc.original_name||'Document';
+  $('#organizeFolder').value=doc.folder_id||'';
+  $('#organizeApplication').value=doc.application_id||'';
+  $('#organizeType').value=doc.document_type||'other';
+  $('#organizeDialog').showModal();
+});
+$('#organizeForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!organizeDocumentId)return;
+  try{
+    await request('customer-documents','document',{method:'PUT',body:{
+      id:organizeDocumentId,
+      action:'organize',
+      folder_id:$('#organizeFolder').value||null,
+      application_id:$('#organizeApplication').value||null,
+      document_type:$('#organizeType').value||'other'
+    }});
+    $('#organizeDialog').close();
+    organizeDocumentId=null;
+    await loadData();
+  }catch(err){alert(err.message||'Unable to organize document.')}
+});
+
 $('#magicForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMsg');msg.textContent='Sending secure link…';try{await request('customer-auth','request-link',{method:'POST',body:{email:$('#email').value}});msg.textContent='If an Ochilink customer account exists for that email, a secure sign-in link has been sent.'}catch(err){msg.textContent=err.message;msg.classList.add('error')}});
 $('#logoutBtn').addEventListener('click',async()=>{try{await request('customer-auth','logout',{method:'POST',body:{}})}finally{state.customer=null;showAuth('You are signed out.')}});
 $('#nav').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(b.dataset.view==='applications'){$('#documentsView').classList.add('hidden');$('#applicationsView').classList.remove('hidden');return}$('#applicationsView').classList.add('hidden');$('#documentsView').classList.remove('hidden');state.filter=b.dataset.filter||'all';state.q='';$('#search').value='';$('#pageTitle').textContent=b.textContent;$('#filterLabel').textContent=b.textContent;await loadData()});
