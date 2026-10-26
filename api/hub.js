@@ -4,7 +4,7 @@ import { useMfa, encryptionReady, canonicalOrigin } from '../lib/security.js';
 import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
-import { createRentalCheckout, getRentalFees, rentalApplicationStatus, latestCustomerRentalApplication, reconcileRentalApplicationPayment } from '../lib/rental.js';
+import { createRentalCheckout, getRentalFees, rentalApplicationStatus, latestCustomerRentalApplication, customerRentalApplication, reconcileRentalApplicationPayment } from '../lib/rental.js';
 import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, rentalFeeAdminSnapshot, updateRentalApplicationStatus, updateRentalFees } from '../lib/rental-admin.js';
 import { activatePreviewVersion, beginAppPreviewUpload, completeAppPreviewUpload, listAppPreviews, setPreviewEnabled } from '../lib/app-previews.js';
 import {
@@ -440,6 +440,16 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     return res.json({
                         application: await latestCustomerRentalApplication(pool, customer.id),
                     });
+                }
+                if (req.method === 'GET' && action === 'rental') {
+                    if (!customer) fail(401, 'Please sign in to your customer account.');
+                    const application = await customerRentalApplication(
+                        pool,
+                        customer.id,
+                        String(req.query?.id || ''),
+                    );
+                    if (!application) fail(404, 'Application not found.');
+                    return res.json({ application });
                 }
                 if (req.method === 'POST' && action === 'logout') {
                     if (customer) {
