@@ -184,11 +184,30 @@ const properCase=v=>{
   if(!s)return '—';
   return s.toLowerCase().replace(/(^|[\s'’-])([a-z])/g,(m,p,c)=>p+c.toUpperCase());
 };
+const sentenceCase=v=>{
+  const s=String(v??'').trim();
+  if(!s)return '—';
+  const lower=s.toLowerCase();
+  return lower.charAt(0).toUpperCase()+lower.slice(1);
+};
+const emailCase=v=>{
+  const s=String(v??'').trim();
+  return s?s.toLowerCase():'—';
+};
+const professionalCase=v=>{
+  const s=String(v??'').trim();
+  if(!s)return '—';
+  const acronyms=new Set(['CEO','CFO','COO','CTO','CIO','CMO','CPA','RN','LPN','CNA','VP','SVP','EVP','HR','IT']);
+  return s.split(/(\s+)/).map(part=>{
+    const upper=part.toUpperCase();
+    return acronyms.has(upper)?upper:properCase(part);
+  }).join('');
+};
 const yesNoCase=v=>{
   const s=String(v??'').trim().toLowerCase();
   if(s==='yes')return 'Yes';
   if(s==='no')return 'No';
-  return s?properCase(s):'—';
+  return s?sentenceCase(s):'—';
 };
 const addPdfSection=(doc,title,items,state)=>{
   if(state.y>720){doc.addPage();state.y=55}
@@ -220,8 +239,8 @@ async function downloadApplicationPdf(id){
   doc.setTextColor(17,24,39);doc.setFont('helvetica','bold');doc.setFontSize(20);doc.text('Rental Application',42,116);
   doc.setFontSize(10);doc.setFont('helvetica','normal');doc.text('Application reference: '+safe(payload.application_id),42,136);doc.text('Status: '+safe(payload.status)+' • Payment verified: '+money(payload.total_cents,payload.currency),42,152);
   const state={y:184};
-  addPdfSection(doc,'Property Details',[['Address',property.address],['Unit / Apt',property.unit],['Lease Term',property.leaseTerm],['Move-in Date',property.moveIn]],state);
-  addPdfSection(doc,'Personal Information',[['Full Legal Name',properCase(personal.fullName)],['Email',personal.email],['Phone',personal.phone],['DOB',personal.dob],['SSN Last 4',personal.ssn],['Driver License',personal.license]],state);
+  addPdfSection(doc,'Property Details',[['Address',property.address],['Unit / Apt',property.unit],['Lease Term',sentenceCase(property.leaseTerm)],['Move-in Date',property.moveIn]],state);
+  addPdfSection(doc,'Personal Information',[['Full Legal Name',properCase(personal.fullName)],['Email',emailCase(personal.email)],['Phone',personal.phone],['DOB',personal.dob],['SSN Last 4',personal.ssn],['Driver License',personal.license]],state);
   addPdfSection(doc,'Occupants',(d.occupants||[]).length
     ? (d.occupants||[]).flatMap((x,i)=>[
         ['Occupant '+(i+1)+' Name',properCase(x.name)],
@@ -231,21 +250,21 @@ async function downloadApplicationPdf(id){
     : [['Occupants','None listed']],state);
   addPdfSection(doc,'Vehicles',(d.vehicles||[]).length
     ? (d.vehicles||[]).flatMap((x,i)=>[
-        ['Vehicle '+(i+1)+' Make',x.make],
-        ['Vehicle '+(i+1)+' Model',x.model],
+        ['Vehicle '+(i+1)+' Make',properCase(x.make)],
+        ['Vehicle '+(i+1)+' Model',properCase(x.model)],
         ['Vehicle '+(i+1)+' Year',x.year],
         ['Vehicle '+(i+1)+' Plate',x.plate],
       ])
     : [['Vehicles','None listed']],state);
-  addPdfSection(doc,'Employment',[['Employer',d.employment?.employer],['Position',d.employment?.position],['Monthly Income',d.employment?.income],['Supervisor',d.employment?.supervisor],['Years There',d.employment?.years]],state);
+  addPdfSection(doc,'Employment',[['Employer',properCase(d.employment?.employer)],['Position',professionalCase(d.employment?.position)],['Monthly Income',d.employment?.income],['Supervisor',properCase(d.employment?.supervisor)],['Years There',d.employment?.years]],state);
   addPdfSection(doc,'Residential History',(d.residential||[]).length
     ? (d.residential||[]).flatMap((x,i)=>[
         ['Address '+(i+1),x.address],
-        ['Landlord '+(i+1),x.landlord],
-        ['Rent '+(i+1),x.rent],
+        ['Landlord '+(i+1),properCase(x.landlord)],
+        ['Rent '+(i+1),sentenceCase(x.rent)],
         ['From '+(i+1),x.from],
         ['To '+(i+1),x.to],
-        ['Reason for leaving '+(i+1),x.reason],
+        ['Reason for leaving '+(i+1),sentenceCase(x.reason)],
       ])
     : [['Residential History','None listed']],state);
   addPdfSection(doc,'References',(d.references||[]).length
@@ -256,7 +275,7 @@ async function downloadApplicationPdf(id){
       ])
     : [['References','None listed']],state);
   addPdfSection(doc,'Emergency Contact',[['Name',properCase(d.emergency?.name)],['Phone',d.emergency?.phone],['Relationship',properCase(d.emergency?.rel)],['Address',d.emergency?.address]],state);
-  addPdfSection(doc,'Screening',[['Eviction',yesNoCase(d.screening?.eviction)],['Bankruptcy',yesNoCase(d.screening?.bankruptcy)],['Criminal convictions',yesNoCase(d.screening?.criminal)],['Smoking',yesNoCase(d.screening?.smoking)],['Pets',yesNoCase(d.screening?.pets)],['Pet details',d.screening?.petsDetail]],state);
+  addPdfSection(doc,'Screening',[['Eviction',yesNoCase(d.screening?.eviction)],['Bankruptcy',yesNoCase(d.screening?.bankruptcy)],['Criminal convictions',yesNoCase(d.screening?.criminal)],['Smoking',yesNoCase(d.screening?.smoking)],['Pets',yesNoCase(d.screening?.pets)],['Pet details',sentenceCase(d.screening?.petsDetail)]],state);
   addPdfSection(doc,'Payment',[['Application Fee',money(payload.application_fee_cents,payload.currency)],['Processing Fee',money(payload.processing_fee_cents,payload.currency)],['Total Paid',money(payload.total_cents,payload.currency)],['Signature',d.payment?.signature]],state);
   const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(110,118,129);doc.text('Ochilink • Secure Rental Application • Page '+p+' of '+pages,42,770)}
   doc.save('ochilink-rental-application-'+String(payload.application_id||'copy').slice(0,8)+'.pdf');
