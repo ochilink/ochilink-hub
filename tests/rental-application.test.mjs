@@ -42,7 +42,7 @@ test('rental application page is wired to Hub fees and checkout APIs', () => {
   assert.match(page, /location\.assign\("\/account\/"\)/);
   assert.match(page, /CUSTOMER|customer-auth/);
   assert.match(page, /payment_status===\"paid\"/);
-  assert.match(page, /sessionStorage\.setItem\("ochi_rental_thank_you"/);\n  assert.match(page, /location\.assign\("\\/rental-application\\/thank-you\\/"\)/);
+  assert.match(page, /sessionStorage\.setItem\("ochi_rental_thank_you"/);\n  assert.ok(page.includes('location.assign("/rental-application/thank-you/")'));
   assert.match(page, /Start Application/);
   assert.doesNotMatch(page, /children:\"Start as Guest\"/);
 });
