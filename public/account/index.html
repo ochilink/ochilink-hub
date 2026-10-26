@@ -17,7 +17,7 @@
     main{min-width:0}.topbar{height:72px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;padding:0 26px;position:sticky;top:0;background:rgba(11,15,26,.94);backdrop-filter:blur(14px);z-index:3}
     .search{flex:1;max-width:680px;background:#111a2a;border:1px solid var(--line);color:var(--text);border-radius:12px;padding:11px 14px}.btn{border:1px solid var(--line);background:#162034;color:var(--text);padding:10px 14px;border-radius:11px;cursor:pointer}.btn:hover{border-color:#3a4e73}.primary{background:var(--green);border-color:var(--green);color:#07110f;font-weight:800}.danger{color:#ffdfe4;border-color:#5e2631;background:#29151a}
     .content{padding:26px}.headline{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:24px}.headline h1{margin:0;font-size:30px}.headline p{margin:7px 0 0;color:var(--muted)}
-    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:26px}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px}.card{padding:16px;cursor:pointer}.card:hover{border-color:#3e527a}.foldertitle{font-weight:700}.count{font-size:12px;color:var(--muted);margin-top:6px}
+    .cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:26px}.card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px}.card{padding:16px;cursor:pointer}.card:hover{border-color:#3e527a}.folder-card{width:100%;text-align:left;color:inherit;border:1px solid var(--line);background:var(--panel);border-radius:16px}.folder-card.active{border-color:var(--green);box-shadow:0 0 0 1px var(--green)}.foldertitle{font-weight:700}.count{font-size:12px;color:var(--muted);margin-top:6px}
     .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:22px}.stat{padding:15px}.stat strong{display:block;font-size:23px}.stat span{color:var(--muted);font-size:12px}
     .panel{overflow:hidden}.panelhead{display:flex;justify-content:space-between;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}table{width:100%;border-collapse:collapse}th,td{padding:13px 16px;text-align:left;border-bottom:1px solid #1e2a40;font-size:13px}th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.08em}.file{font-weight:650}.actions{display:flex;gap:6px;flex-wrap:wrap}.mini{padding:6px 9px;border-radius:8px;font-size:12px}.tag{padding:4px 8px;border-radius:99px;background:#152c29;color:#7fffe2;font-size:11px}.pending{background:#302815;color:#f8d46a}.empty{padding:36px;text-align:center;color:var(--muted)}
     .apps{display:grid;gap:10px}.app{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:14px;border-bottom:1px solid #1e2a40}.app:last-child{border-bottom:0}.appname{font-weight:700}.status{font-size:11px;color:var(--green);text-transform:uppercase;letter-spacing:.08em}
@@ -167,7 +167,7 @@
 
 <script>
 const api = '/api/hub';
-const state = { customer:null, filter:'all', q:'', data:{documents:[],folders:[],applications:[]} };
+const state = { customer:null, filter:'all', folderId:null, q:'', data:{documents:[],folders:[],applications:[]} };
 const $ = (s) => document.querySelector(s);
 const authView=$('#authView'), vaultView=$('#vaultView'), filesBody=$('#filesBody');
 function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
@@ -390,9 +390,11 @@ async function loadData(){
   render();
 }
 function render(){
-  const d=state.data;$('#fileCount').textContent=d.documents.length;$('#folderCount').textContent=d.folders.length;$('#appCount').textContent=d.applications.length;
-  $('#folders').innerHTML=d.folders.length?d.folders.map(f=>`<div class="card"><div class="foldertitle">📁 ${esc(f.name)}</div><div class="count">${f.file_count} file${Number(f.file_count)===1?'':'s'}</div></div>`).join(''):'<div class="small">No folders yet.</div>';
-  filesBody.innerHTML=d.documents.map(x=>`<tr>
+  const d=state.data;
+  const visibleDocuments=state.folderId?d.documents.filter(x=>x.folder_id===state.folderId):d.documents;
+  $('#fileCount').textContent=visibleDocuments.length;$('#folderCount').textContent=d.folders.length;$('#appCount').textContent=d.applications.length;
+  $('#folders').innerHTML=d.folders.length?d.folders.map(f=>`<button type="button" class="folder-card ${state.folderId===f.id?'active':''}" data-folder-id="${f.id}" data-folder-name="${esc(f.name)}"><div class="foldertitle">📁 ${esc(f.name)}</div><div class="count">${f.file_count} file${Number(f.file_count)===1?'':'s'}</div></button>`).join(''):'<div class="small">No folders yet.</div>';
+  filesBody.innerHTML=visibleDocuments.map(x=>`<tr>
     <td><div class="file">${esc(x.original_name)}</div><div class="small">${esc(x.document_type||'other')} · ${esc(x.content_type)}</div></td>
     <td>${esc(x.folder_name||'—')}</td><td>${bytes(x.byte_size)}</td>
     <td>${x.uploaded_at?new Date(x.uploaded_at).toLocaleDateString():'Pending'}</td>
@@ -401,7 +403,7 @@ function render(){
       ${state.filter==='trash'?'<button class="btn mini" data-action="restore" data-id="'+x.id+'">Restore</button>':`<button class="btn mini" data-organize="${x.id}">Organize</button><button class="btn mini" data-action="${x.starred?'unstar':'star'}" data-id="${x.id}">${x.starred?'Unstar':'Star'}</button><button class="btn mini danger" data-action="trash" data-id="${x.id}">Trash</button>`}
       ${x.state!=='ready'?'<span class="tag pending">Pending</span>':''}
     </div></td></tr>`).join('');
-  $('#emptyFiles').classList.toggle('hidden',d.documents.length>0);
+  $('#emptyFiles').classList.toggle('hidden',visibleDocuments.length>0);
   $('#applications').innerHTML=d.applications.map(a=>`<div class="app"><div style="flex:1"><div class="appname">${esc(a.property_address||'Rental application')}</div><div class="small">Reference: ${esc(a.id)}</div>${checklistFor(a.id)}</div><div style="text-align:right"><div class="status">${esc(a.status)}</div><div class="small">${a.submitted_at?new Date(a.submitted_at).toLocaleDateString():'Not submitted'}</div><button class="btn mini" style="margin-top:8px" data-app-pdf="${a.id}">Download PDF</button></div></div>`).join('');
   $('#emptyApps').classList.toggle('hidden',d.applications.length>0);
   $('#applications').querySelectorAll('[data-app-pdf]').forEach(btn=>btn.addEventListener('click',async()=>{
@@ -447,7 +449,8 @@ $('#organizeForm').addEventListener('submit',async e=>{
 
 $('#magicForm').addEventListener('submit',async e=>{e.preventDefault();const msg=$('#authMsg');msg.textContent='Sending secure link…';try{await request('customer-auth','request-link',{method:'POST',body:{email:$('#email').value}});msg.textContent='If an Ochilink customer account exists for that email, a secure sign-in link has been sent.'}catch(err){msg.textContent=err.message;msg.classList.add('error')}});
 $('#logoutBtn').addEventListener('click',async()=>{try{await request('customer-auth','logout',{method:'POST',body:{}})}finally{state.customer=null;showAuth('You are signed out.')}});
-$('#nav').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');if(b.dataset.view==='applications'){$('#documentsView').classList.add('hidden');$('#applicationsView').classList.remove('hidden');return}$('#applicationsView').classList.add('hidden');$('#documentsView').classList.remove('hidden');state.filter=b.dataset.filter||'all';state.q='';$('#search').value='';$('#pageTitle').textContent=b.textContent;$('#filterLabel').textContent=b.textContent;await loadData()});
+$('#nav').addEventListener('click',async e=>{const b=e.target.closest('button');if(!b)return;document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));b.classList.add('active');state.folderId=null;if(b.dataset.view==='applications'){$('#documentsView').classList.add('hidden');$('#applicationsView').classList.remove('hidden');return}$('#applicationsView').classList.add('hidden');$('#documentsView').classList.remove('hidden');state.filter=b.dataset.filter||'all';state.q='';$('#search').value='';$('#pageTitle').textContent=b.textContent;$('#filterLabel').textContent=b.textContent;await loadData()});
+$('#folders').addEventListener('click',e=>{const card=e.target.closest('[data-folder-id]');if(!card)return;state.folderId=card.dataset.folderId;state.filter='all';state.q='';$('#search').value='';document.querySelectorAll('.navbtn').forEach(x=>x.classList.remove('active'));const allBtn=document.querySelector('.navbtn[data-filter="all"]');if(allBtn)allBtn.classList.add('active');$('#pageTitle').textContent=card.dataset.folderName||'Folder';$('#filterLabel').textContent=card.dataset.folderName||'Folder';render()});
 let timer;$('#search').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(async()=>{state.q=$('#search').value;await loadData()},250)});
 $('#uploadBtn').addEventListener('click',()=>$('#uploadDialog').showModal());$('#newFolderBtn').addEventListener('click',()=>$('#folderDialog').showModal());document.querySelectorAll('[data-close]').forEach(b=>b.addEventListener('click',()=>b.closest('dialog').close()));
 $('#folderForm').addEventListener('submit',async e=>{e.preventDefault();try{await request('customer-documents','folder',{method:'POST',body:{name:$('#folderName').value}});$('#folderDialog').close();$('#folderName').value='';await loadData()}catch(err){alert(err.message)}});
