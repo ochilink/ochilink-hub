@@ -180,3 +180,18 @@ test('rental PDF includes required payment and authorization disclosures', () =>
   assert.match(account, /Florida Fair Housing Act \(Fla\. Stat\. § 760\.23\)/);
   assert.match(account, /Applicant Signature/);
 });
+
+
+test('customer can organize an existing document into owned folder/application', () => {
+  const docs = fs.readFileSync(new URL('../lib/documents.js', import.meta.url), 'utf8');
+  const account = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+  assert.match(docs, /'organize'/);
+  assert.match(docs, /customer_folders WHERE id=\$1 AND customer_id=\$2/);
+  assert.match(docs, /rental_applications WHERE id=\$1 AND customer_id=\$2/);
+  assert.match(docs, /SET folder_id=\$3,application_id=\$4,document_type=\$5/);
+  assert.match(account, /data-organize/);
+  assert.match(account, /Organize document/);
+  assert.match(account, /organizeFolder/);
+  assert.match(account, /organizeApplication/);
+  assert.match(account, /action:'organize'/);
+});
