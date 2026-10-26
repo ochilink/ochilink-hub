@@ -210,15 +210,54 @@ const yesNoCase=v=>{
   return s?sentenceCase(s):'—';
 };
 const addPdfSection=(doc,title,items,state)=>{
-  if(state.y>720){doc.addPage();state.y=55}
-  doc.setTextColor(68,126,55);doc.setFont('helvetica','bold');doc.setFontSize(13);doc.text(title,42,state.y);state.y+=18;
-  doc.setTextColor(35,45,58);doc.setFont('helvetica','normal');doc.setFontSize(10);
-  for(const [label,value] of items){
-    const lines=doc.splitTextToSize(label+': '+safe(value),510);
-    if(state.y+lines.length*14>760){doc.addPage();state.y=55}
-    doc.text(lines,42,state.y);state.y+=lines.length*14+3;
+  const pageBottom=748,left=42,right=570,gap=18,colWidth=(right-left-gap)/2;
+  const ensurePage=(needed=40)=>{
+    if(state.y+needed>pageBottom){
+      doc.addPage();
+      state.y=50;
+    }
+  };
+  ensurePage(46);
+  doc.setTextColor(68,126,55);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  doc.text(String(title).toUpperCase(),left,state.y);
+  doc.setDrawColor(68,126,55);
+  doc.setLineWidth(1);
+  doc.line(left,state.y+5,right,state.y+5);
+  state.y+=18;
+
+  for(let i=0;i<items.length;i+=2){
+    const pair=items.slice(i,i+2);
+    const prepared=pair.map(([label,value])=>{
+      const labelText=String(label);
+      const valueText=safe(value);
+      const valueLines=doc.splitTextToSize(valueText,colWidth-8);
+      return {labelText,valueText,valueLines};
+    });
+    const rowHeight=Math.max(...prepared.map(x=>18+x.valueLines.length*11))+8;
+    ensurePage(rowHeight+8);
+
+    prepared.forEach((item,index)=>{
+      const x=left+index*(colWidth+gap);
+      doc.setTextColor(100,116,139);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7.5);
+      doc.text(item.labelText.toUpperCase(),x,state.y);
+
+      doc.setTextColor(17,24,39);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(10);
+      doc.text(item.valueLines,x,state.y+13);
+
+      const lineY=state.y+18+item.valueLines.length*11;
+      doc.setDrawColor(203,213,225);
+      doc.setLineWidth(.5);
+      doc.line(x,lineY,x+colWidth,lineY);
+    });
+    state.y+=rowHeight;
   }
-  state.y+=8;
+  state.y+=6;
 };
 async function logoData(){
   const svg=await fetch('/assets/ochilink-final-logo.svg',{cache:'force-cache'}).then(r=>r.text());
