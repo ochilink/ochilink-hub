@@ -27,6 +27,12 @@ import { createHash, randomBytes, createHmac } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { getPool } from './_db.js';
 
+function requestOrigin(req) {
+    const host = String(req.headers?.host || '').trim();
+    const origin = String(req.headers?.origin || '').trim();
+    if (host && origin === `https://${host}`) return origin;
+    return null;
+}
 function clientIp(req) {
     // Vercel supplies a proxy-controlled client IP; do not trust arbitrary
     // forwarding chains when Vercel's request marker is present.
@@ -395,6 +401,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     pool,
                     body,
                     stripeReady() ? stripeProvider() : null,
+                    requestOrigin(req),
                 );
                 return res.status(201).json(result);
             }
@@ -559,7 +566,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                 if (bookingToken) {
                     // Commit the hold/payment before Stripe: a timeout or lost response
                     // can then be retried with the same token and Stripe idempotency key.
-                    const result = await transaction(pool, client => checkout(client, bookingToken, stripeProvider()));
+                    const result = await transaction(pool, client => checkout(client, bookingToken, stripeProvider(), requestOrigin(req)));
                     return res.status(201).json({ ok: true, checkout_url: result.url });
                 }
                 await flushMail(pool, { limit: 3 });
