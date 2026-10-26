@@ -60,3 +60,16 @@ test('payment return canonicalizes before customer session exchange', () => {
   assert.ok(statusIndex > canonicalIndex);
   assert.ok(exchangeIndex > canonicalIndex);
 });
+
+
+test('rental mobile header uses two rows and keeps sign out in the drawer', () => {
+  const page = fs.readFileSync(new URL('../public/rental-application/index.html', import.meta.url), 'utf8');
+  const css = fs.readFileSync(new URL('../public/assets/hub-rental.css', import.meta.url), 'utf8');
+  assert.match(page, /rental-header/);
+  assert.match(page, /rental-header-logo/);
+  assert.match(page, /rental-header-actions/);
+  assert.match(page, /rental-header-signout/);
+  assert.match(page, /rental-drawer-signout/);
+  assert.match(css, /grid-template-areas:[\s\S]*"brand brand"[\s\S]*"menu actions"/);
+  assert.match(css, /\.rental-header-signout\s*\{[\s\S]*display:none !important/);
+});
