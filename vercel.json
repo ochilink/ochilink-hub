@@ -25,6 +25,10 @@
       "destination": "/booking/index.html"
     },
     {
+      "source": "/rental-application/thank-you",
+      "destination": "/rental-application/thank-you/index.html"
+    },
+    {
       "source": "/account",
       "destination": "/account/index.html"
     }
