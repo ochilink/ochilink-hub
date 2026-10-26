@@ -81,3 +81,11 @@ test('rental dark mode keeps date controls and green status text readable', () =
   assert.match(css, /\[data-theme=dark\] input\[type="date"\][\s\S]*color-scheme:dark/);
   assert.match(css, /\[data-theme=dark\] input\[type="date"\]::-webkit-calendar-picker-indicator[\s\S]*filter:invert\(1\) brightness\(1\.7\)/);
 });
+
+
+test('rental date picker uses explicit theme-aware calendar icons', () => {
+  const css = fs.readFileSync(new URL('../public/assets/hub-rental.css', import.meta.url), 'utf8');
+  assert.match(css, /stroke='%230F172A'/);
+  assert.match(css, /stroke='%23F8FAFC'/);
+  assert.match(css, /\[data-theme=dark\] input\[type="date"\]::-webkit-calendar-picker-indicator/);
+});
