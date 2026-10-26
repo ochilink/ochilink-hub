@@ -167,3 +167,16 @@ test('rental PDF uses structured two-column form layout', () => {
   assert.match(account, /doc\.line\(x,lineY,x\+colWidth,lineY\)/);
   assert.match(account, /String\(title\)\.toUpperCase\(\)/);
 });
+
+
+test('rental PDF includes required payment and authorization disclosures', () => {
+  const account = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+  assert.match(account, /Application Fee & Payment/);
+  assert.match(account, /non-refundable Application Fee of \$150\.00/);
+  assert.match(account, /Stripe’s standard processing fee of 2\.9% \+ \$0\.30/);
+  assert.match(account, /Total Due \$154\.65/);
+  assert.match(account, /Authorization, Acknowledgment & Signature/);
+  assert.match(account, /Fair Credit Reporting Act \(15 U\.S\.C\. § 1681\)/);
+  assert.match(account, /Florida Fair Housing Act \(Fla\. Stat\. § 760\.23\)/);
+  assert.match(account, /Applicant Signature/);
+});
