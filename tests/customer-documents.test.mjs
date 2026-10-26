@@ -121,3 +121,14 @@ test('signed-in customer account owns rental PDF download action', () => {
   assert.match(rental, /customerRentalApplication/);
   assert.match(rental, /customer_id=\$2/);
 });
+
+
+test('rental PDF includes full submitted application sections', () => {
+  const account = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+  for (const section of ['Occupants','Vehicles','Residential History','References','Emergency Contact']) {
+    assert.match(account, new RegExp("addPdfSection\\(doc,'"+section+"'"));
+  }
+  assert.match(account, /Reference '\+\(i\+1\)\+' Name'/);
+  assert.match(account, /Reference '\+\(i\+1\)\+' Phone'/);
+  assert.match(account, /Reference '\+\(i\+1\)\+' Relationship'/);
+});
