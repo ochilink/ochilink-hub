@@ -43,11 +43,27 @@
     </main>
   </div>
 <script>
-(function(){
+(async function(){
+  let payload=null;
   const raw=sessionStorage.getItem('ochi_rental_thank_you');
-  if(!raw){ location.replace('/rental-application/'); return; }
-  let payload;
-  try{ payload=JSON.parse(raw); }catch{ location.replace('/rental-application/'); return; }
+  if(raw){
+    try{ payload=JSON.parse(raw); }catch{}
+  }
+  if(!payload){
+    try{
+      const response=await fetch('/api/hub?resource=customer-auth&action=latest-rental',{cache:'no-store'});
+      if(response.ok){
+        const data=await response.json();
+        payload=data.application||null;
+        if(payload) sessionStorage.setItem('ochi_rental_thank_you',JSON.stringify(payload));
+      }
+    }catch{}
+  }
+  if(!payload){
+    document.querySelector('.lead').textContent='We could not load a paid rental application for this browser session. Open My Account to view your applications and documents.';
+    document.getElementById('downloadPdf').disabled=true;
+    return;
+  }
   const d=payload.application_data||{}, personal=d.personal||{}, property=d.property||{};
   const money=v=>new Intl.NumberFormat('en-US',{style:'currency',currency:String(payload.currency||'usd').toUpperCase()}).format(Number(v||0)/100);
   document.getElementById('applicationRef').textContent=payload.application_id||'—';
