@@ -47,3 +47,16 @@ test('rental application page is wired to Hub fees and checkout APIs', () => {
   assert.match(page, /Start Application/);
   assert.doesNotMatch(page, /children:\"Start as Guest\"/);
 });
+
+
+test('payment return canonicalizes before customer session exchange', () => {
+  const html = fs.readFileSync(new URL('../public/rental-application/index.html', import.meta.url), 'utf8');
+  const canonicalIndex = html.indexOf("resource=canonical-origin");
+  const returnedIndex = html.indexOf("payment')==='returned");
+  const statusIndex = html.indexOf("resource=rental&action=status");
+  const exchangeIndex = html.indexOf("customer-auth&action=exchange-application");
+  assert.ok(canonicalIndex >= 0);
+  assert.ok(returnedIndex >= 0);
+  assert.ok(statusIndex > canonicalIndex);
+  assert.ok(exchangeIndex > canonicalIndex);
+});
