@@ -4,7 +4,7 @@ import { useMfa, encryptionReady } from '../lib/security.js';
 import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
-import { createRentalCheckout, getRentalFees, rentalApplicationStatus } from '../lib/rental.js';
+import { createRentalCheckout, getRentalFees, rentalApplicationStatus, latestCustomerRentalApplication } from '../lib/rental.js';
 import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, rentalFeeAdminSnapshot, updateRentalApplicationStatus, updateRentalFees } from '../lib/rental-admin.js';
 import { activatePreviewVersion, beginAppPreviewUpload, completeAppPreviewUpload, listAppPreviews, setPreviewEnabled } from '../lib/app-previews.js';
 import {
@@ -433,6 +433,12 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                 const customer = await currentCustomer(pool, req);
                 if (req.method === 'GET' && action === 'session')
                     return res.json({ customer });
+                if (req.method === 'GET' && action === 'latest-rental') {
+                    if (!customer) fail(401, 'Please sign in to your customer account.');
+                    return res.json({
+                        application: await latestCustomerRentalApplication(pool, customer.id),
+                    });
+                }
                 if (req.method === 'POST' && action === 'logout') {
                     if (customer) {
                         await pool.query(
