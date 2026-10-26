@@ -25,6 +25,20 @@
     @media(max-width:900px){.shell{grid-template-columns:1fr}aside{position:static;height:auto;border-right:0;border-bottom:1px solid var(--line)}nav{grid-template-columns:repeat(3,1fr)}.sidefoot{position:static;margin-top:14px}.cards{grid-template-columns:repeat(2,1fr)}.topbar{padding:0 14px}.content{padding:18px}}
     @media(max-width:560px){nav{grid-template-columns:repeat(2,1fr)}.cards,.stats{grid-template-columns:1fr}.headline{display:block}.headline .primary{margin-top:14px}th:nth-child(3),td:nth-child(3){display:none}.topbar{height:auto;padding:12px;flex-wrap:wrap}.search{order:3;max-width:none;width:100%}}
   </style>
+<script>
+(async()=>{
+  try{
+    const r=await fetch('/api/hub?resource=canonical-origin',{cache:'no-store'});
+    if(r.ok){
+      const {origin}=await r.json();
+      if(origin && origin!==location.origin){
+        location.replace(origin+location.pathname+location.search+location.hash);
+        return;
+      }
+    }
+  }catch{}
+})();
+</script>
 </head>
 <body>
   <section id="authView" class="authwrap">
