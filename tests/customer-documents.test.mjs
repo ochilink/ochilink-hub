@@ -132,3 +132,14 @@ test('rental PDF includes full submitted application sections', () => {
   assert.match(account, /Reference '\+\(i\+1\)\+' Phone'/);
   assert.match(account, /Reference '\+\(i\+1\)\+' Relationship'/);
 });
+
+
+test('rental PDF standardizes display casing without mutating stored data', () => {
+  const account = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+  assert.match(account, /const properCase=/);
+  assert.match(account, /const yesNoCase=/);
+  assert.match(account, /properCase\(personal\.fullName\)/);
+  assert.match(account, /properCase\(x\.name\)/);
+  assert.match(account, /properCase\(x\.rel\)/);
+  assert.match(account, /yesNoCase\(d\.screening\?\.eviction\)/);
+});
