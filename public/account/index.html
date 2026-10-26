@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>My Documents | Ochilink</title>
   <meta name="referrer" content="no-referrer">
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
     :root{--bg:#0b0f1a;--panel:#121827;--panel2:#172033;--line:#25314a;--text:#eef4ff;--muted:#8fa0ba;--green:#447E37;--blue:#4da3ff;--danger:#ff6b7a}
     *{box-sizing:border-box} body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -176,6 +177,48 @@ async function bootstrap(){
     await loadData();
   }catch(e){showAuth(e.message)}
 }
+const money=(v,currency='usd')=>new Intl.NumberFormat('en-US',{style:'currency',currency:String(currency).toUpperCase()}).format(Number(v||0)/100);
+const safe=v=>String(v??'').trim()||'—';
+const addPdfSection=(doc,title,items,state)=>{
+  if(state.y>720){doc.addPage();state.y=55}
+  doc.setTextColor(68,126,55);doc.setFont('helvetica','bold');doc.setFontSize(13);doc.text(title,42,state.y);state.y+=18;
+  doc.setTextColor(35,45,58);doc.setFont('helvetica','normal');doc.setFontSize(10);
+  for(const [label,value] of items){
+    const lines=doc.splitTextToSize(label+': '+safe(value),510);
+    if(state.y+lines.length*14>760){doc.addPage();state.y=55}
+    doc.text(lines,42,state.y);state.y+=lines.length*14+3;
+  }
+  state.y+=8;
+};
+async function logoData(){
+  const svg=await fetch('/assets/ochilink-final-logo.svg',{cache:'force-cache'}).then(r=>r.text());
+  const blob=new Blob([svg],{type:'image/svg+xml'}),url=URL.createObjectURL(blob);
+  try{
+    const img=new Image();await new Promise((resolve,reject)=>{img.onload=resolve;img.onerror=reject;img.src=url});
+    const canvas=document.createElement('canvas');canvas.width=900;canvas.height=200;
+    canvas.getContext('2d').drawImage(img,0,0,900,200);return canvas.toDataURL('image/png');
+  }finally{URL.revokeObjectURL(url)}
+}
+async function downloadApplicationPdf(id){
+  const {application:payload}=await request('customer-auth','rental',{query:{id}});
+  const d=payload.application_data||{},personal=d.personal||{},property=d.property||{};
+  if(!window.jspdf?.jsPDF)throw new Error('PDF library unavailable.');
+  const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'pt',format:'letter'}),green=[68,126,55];
+  try{doc.addImage(await logoData(),'PNG',42,34,165,37)}catch{doc.setTextColor(...green);doc.setFontSize(22);doc.setFont('helvetica','bold');doc.text('ochilink',42,58)}
+  doc.setDrawColor(...green);doc.setLineWidth(2);doc.line(42,84,570,84);
+  doc.setTextColor(17,24,39);doc.setFont('helvetica','bold');doc.setFontSize(20);doc.text('Rental Application',42,116);
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.text('Application reference: '+safe(payload.application_id),42,136);doc.text('Status: '+safe(payload.status)+' • Payment verified: '+money(payload.total_cents,payload.currency),42,152);
+  const state={y:184};
+  addPdfSection(doc,'Property Details',[['Address',property.address],['Unit / Apt',property.unit],['Lease Term',property.leaseTerm],['Move-in Date',property.moveIn]],state);
+  addPdfSection(doc,'Personal Information',[['Full Legal Name',personal.fullName],['Email',personal.email],['Phone',personal.phone],['DOB',personal.dob],['SSN Last 4',personal.ssn],['Driver License',personal.license]],state);
+  addPdfSection(doc,'Employment',[['Employer',d.employment?.employer],['Position',d.employment?.position],['Monthly Income',d.employment?.income],['Supervisor',d.employment?.supervisor],['Years There',d.employment?.years]],state);
+  addPdfSection(doc,'Emergency Contact',[['Name',d.emergency?.name],['Phone',d.emergency?.phone],['Relationship',d.emergency?.rel],['Address',d.emergency?.address]],state);
+  addPdfSection(doc,'Screening',[['Eviction',d.screening?.eviction],['Bankruptcy',d.screening?.bankruptcy],['Criminal convictions',d.screening?.criminal],['Smoking',d.screening?.smoking],['Pets',d.screening?.pets],['Pet details',d.screening?.petsDetail]],state);
+  addPdfSection(doc,'Payment',[['Application Fee',money(payload.application_fee_cents,payload.currency)],['Processing Fee',money(payload.processing_fee_cents,payload.currency)],['Total Paid',money(payload.total_cents,payload.currency)],['Signature',d.payment?.signature]],state);
+  const pages=doc.getNumberOfPages();for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFontSize(8);doc.setTextColor(110,118,129);doc.text('Ochilink • Secure Rental Application • Page '+p+' of '+pages,42,770)}
+  doc.save('ochilink-rental-application-'+String(payload.application_id||'copy').slice(0,8)+'.pdf');
+}
+
 async function loadData(){
   state.data=await request('customer-documents','list',{query:{filter:state.filter,q:state.q}});
   render();
@@ -193,8 +236,14 @@ function render(){
       ${x.state!=='ready'?'<span class="tag pending">Pending</span>':''}
     </div></td></tr>`).join('');
   $('#emptyFiles').classList.toggle('hidden',d.documents.length>0);
-  $('#applications').innerHTML=d.applications.map(a=>`<div class="app"><div style="flex:1"><div class="appname">${esc(a.property_address||'Rental application')}</div><div class="small">Reference: ${esc(a.id)}</div>${checklistFor(a.id)}</div><div style="text-align:right"><div class="status">${esc(a.status)}</div><div class="small">${a.submitted_at?new Date(a.submitted_at).toLocaleDateString():'Not submitted'}</div></div></div>`).join('');
+  $('#applications').innerHTML=d.applications.map(a=>`<div class="app"><div style="flex:1"><div class="appname">${esc(a.property_address||'Rental application')}</div><div class="small">Reference: ${esc(a.id)}</div>${checklistFor(a.id)}</div><div style="text-align:right"><div class="status">${esc(a.status)}</div><div class="small">${a.submitted_at?new Date(a.submitted_at).toLocaleDateString():'Not submitted'}</div><button class="btn mini" style="margin-top:8px" data-app-pdf="${a.id}">Download PDF</button></div></div>`).join('');
   $('#emptyApps').classList.toggle('hidden',d.applications.length>0);
+  $('#applications').querySelectorAll('[data-app-pdf]').forEach(btn=>btn.addEventListener('click',async()=>{
+    const old=btn.textContent;btn.disabled=true;btn.textContent='Preparing…';
+    try{await downloadApplicationPdf(btn.dataset.appPdf)}
+    catch(e){alert(e.message||'Unable to generate PDF.')}
+    finally{btn.disabled=false;btn.textContent=old}
+  }));
   $('#folderSelect').innerHTML='<option value="">No folder</option>'+d.folders.map(f=>`<option value="${f.id}">${esc(f.name)}</option>`).join('');
   $('#applicationSelect').innerHTML='<option value="">No application</option>'+d.applications.map(a=>`<option value="${a.id}">${esc(a.property_address||a.id)}</option>`).join('');
 }
