@@ -13,9 +13,11 @@ test('rental application inline module bundle parses without syntax errors', () 
     const stack = String(error.stack || error);
     const lines = stack.split('\n');
     const marker = lines.findIndex((line) => line.startsWith('rental-application-inline.js:'));
-    if (marker >= 0 && lines[marker + 1] && lines[marker + 2]) {
+    const caretIndex = lines.findIndex((line, index) => index > marker && index < marker + 8 && line.includes('^'));
+    console.error('RENTAL_STACK_META=' + JSON.stringify(lines.slice(Math.max(0, marker), marker + 8).map((line, index) => ({ index, length: line.length, hasCaret: line.includes('^'), head: line.slice(0,80), tail: line.slice(-80) }))));
+    if (marker >= 0 && caretIndex >= 0) {
       const sourceLine = lines[marker + 1];
-      const caretLine = lines[marker + 2];
+      const caretLine = lines[caretIndex];
       const column = caretLine.indexOf('^');
       console.error('RENTAL_PARSE_COLUMN=' + column);
       console.error('RENTAL_PARSE_CONTEXT=' + sourceLine.slice(Math.max(0, column - 220), column + 220));
