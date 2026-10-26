@@ -391,6 +391,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                         pool,
                         req.query?.id,
                         req.query?.access_token,
+                        stripeReady() ? stripeProvider() : null,
                     ));
                 fail(400, 'Invalid rental action.');
             }
