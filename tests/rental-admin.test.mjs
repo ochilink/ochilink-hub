@@ -50,3 +50,13 @@ test('Rental Applications is integrated into the Admin navigation shell', () => 
   assert.match(rentals, /href="\/favicon\.svg"/);
   assert.match(rentals, /ochilink-final-logo\.svg/);
 });
+
+
+test('rental admin uses a hamburger drawer on mobile', () => {
+  const page = fs.readFileSync(new URL('../public/admin/rentals/index.html', import.meta.url), 'utf8');
+  assert.match(page, /id="adminMenuBtn"/);
+  assert.match(page, /id="adminSidebar"/);
+  assert.match(page, /id="adminBackdrop"/);
+  assert.match(page, /\.admin-shell\.menu-open \.admin-sidebar\{transform:translateX\(0\)\}/);
+  assert.match(page, /setAdminMenu\(false\)/);
+});
