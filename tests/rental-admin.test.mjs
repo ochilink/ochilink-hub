@@ -69,3 +69,10 @@ test('rental admin fee GET and PUT actions are wired in the Hub API', () => {
   assert.match(api, /req\.method === 'PUT' && action === 'fees'/);
   assert.match(api, /updateRentalFees\(client, user\.id, body\)/);
 });
+
+
+test('rental admin fee controls stack within the mobile card', () => {
+  const page = fs.readFileSync(new URL('../public/admin/rentals/index.html', import.meta.url), 'utf8');
+  assert.match(page, /#feePanel \.actions\{display:grid;grid-template-columns:1fr;width:100%;margin-top:14px\}/);
+  assert.match(page, /#feePanel \.input,#feePanel \.btn\{width:100%;min-width:0\}/);
+});
