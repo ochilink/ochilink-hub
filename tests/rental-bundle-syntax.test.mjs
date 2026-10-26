@@ -10,7 +10,18 @@ test('rental application inline module bundle parses without syntax errors', () 
   try {
     new vm.Script(match[1], { filename: 'rental-application-inline.js' });
   } catch (error) {
-    console.error(String(error.stack || error));
+    const stack = String(error.stack || error);
+    const lines = stack.split('\n');
+    const marker = lines.findIndex((line) => line.startsWith('rental-application-inline.js:'));
+    if (marker >= 0 && lines[marker + 1] && lines[marker + 2]) {
+      const sourceLine = lines[marker + 1];
+      const caretLine = lines[marker + 2];
+      const column = caretLine.indexOf('^');
+      console.error('RENTAL_PARSE_COLUMN=' + column);
+      console.error('RENTAL_PARSE_CONTEXT=' + sourceLine.slice(Math.max(0, column - 220), column + 220));
+    } else {
+      console.error(stack);
+    }
     throw error;
   }
 });
