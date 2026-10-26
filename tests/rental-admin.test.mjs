@@ -37,3 +37,16 @@ test('rental admin workspace exposes review, status, fee and private document ac
   assert.ok(vercel.includes('"source": "/admin/rentals"'));
   assert.doesNotMatch(page, /Alex Morgan|Jamie Lee|Taylor Kim|mock/i);
 });
+
+
+test('Rental Applications is integrated into the Admin navigation shell', () => {
+  const admin = fs.readFileSync(new URL('../public/admin/index.html', import.meta.url), 'utf8');
+  const rentals = fs.readFileSync(new URL('../public/admin/rentals/index.html', import.meta.url), 'utf8');
+  assert.match(admin, /Rental Applications/);
+  assert.match(admin, /location\.assign\("\/admin\/rentals\/"\)/);
+  assert.match(rentals, /class="admin-shell"/);
+  assert.match(rentals, /class="admin-sidebar"/);
+  assert.match(rentals, /Rental Applications/);
+  assert.match(rentals, /href="\/favicon\.svg"/);
+  assert.match(rentals, /ochilink-final-logo\.svg/);
+});
