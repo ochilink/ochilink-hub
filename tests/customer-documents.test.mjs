@@ -195,3 +195,12 @@ test('customer can organize an existing document into owned folder/application',
   assert.match(account, /organizeApplication/);
   assert.match(account, /action:'organize'/);
 });
+
+
+test('Vault folder cards filter visible documents', () => {
+  const account = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+  assert.match(account, /folderId:null/);
+  assert.match(account, /data-folder-id/);
+  assert.match(account, /visibleDocuments=state\.folderId\?d\.documents\.filter/);
+  assert.match(account, /#folders'\)\.addEventListener\('click'/);
+});
