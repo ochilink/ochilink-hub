@@ -211,7 +211,39 @@ async function downloadApplicationPdf(id){
   const state={y:184};
   addPdfSection(doc,'Property Details',[['Address',property.address],['Unit / Apt',property.unit],['Lease Term',property.leaseTerm],['Move-in Date',property.moveIn]],state);
   addPdfSection(doc,'Personal Information',[['Full Legal Name',personal.fullName],['Email',personal.email],['Phone',personal.phone],['DOB',personal.dob],['SSN Last 4',personal.ssn],['Driver License',personal.license]],state);
+  addPdfSection(doc,'Occupants',(d.occupants||[]).length
+    ? (d.occupants||[]).flatMap((x,i)=>[
+        ['Occupant '+(i+1)+' Name',x.name],
+        ['Occupant '+(i+1)+' Age',x.age],
+        ['Occupant '+(i+1)+' Relationship',x.relationship],
+      ])
+    : [['Occupants','None listed']],state);
+  addPdfSection(doc,'Vehicles',(d.vehicles||[]).length
+    ? (d.vehicles||[]).flatMap((x,i)=>[
+        ['Vehicle '+(i+1)+' Make',x.make],
+        ['Vehicle '+(i+1)+' Model',x.model],
+        ['Vehicle '+(i+1)+' Year',x.year],
+        ['Vehicle '+(i+1)+' Plate',x.plate],
+      ])
+    : [['Vehicles','None listed']],state);
   addPdfSection(doc,'Employment',[['Employer',d.employment?.employer],['Position',d.employment?.position],['Monthly Income',d.employment?.income],['Supervisor',d.employment?.supervisor],['Years There',d.employment?.years]],state);
+  addPdfSection(doc,'Residential History',(d.residential||[]).length
+    ? (d.residential||[]).flatMap((x,i)=>[
+        ['Address '+(i+1),x.address],
+        ['Landlord '+(i+1),x.landlord],
+        ['Rent '+(i+1),x.rent],
+        ['From '+(i+1),x.from],
+        ['To '+(i+1),x.to],
+        ['Reason for leaving '+(i+1),x.reason],
+      ])
+    : [['Residential History','None listed']],state);
+  addPdfSection(doc,'References',(d.references||[]).length
+    ? (d.references||[]).flatMap((x,i)=>[
+        ['Reference '+(i+1)+' Name',x.name],
+        ['Reference '+(i+1)+' Phone',x.phone],
+        ['Reference '+(i+1)+' Relationship',x.rel],
+      ])
+    : [['References','None listed']],state);
   addPdfSection(doc,'Emergency Contact',[['Name',d.emergency?.name],['Phone',d.emergency?.phone],['Relationship',d.emergency?.rel],['Address',d.emergency?.address]],state);
   addPdfSection(doc,'Screening',[['Eviction',d.screening?.eviction],['Bankruptcy',d.screening?.bankruptcy],['Criminal convictions',d.screening?.criminal],['Smoking',d.screening?.smoking],['Pets',d.screening?.pets],['Pet details',d.screening?.petsDetail]],state);
   addPdfSection(doc,'Payment',[['Application Fee',money(payload.application_fee_cents,payload.currency)],['Processing Fee',money(payload.processing_fee_cents,payload.currency)],['Total Paid',money(payload.total_cents,payload.currency)],['Signature',d.payment?.signature]],state);
