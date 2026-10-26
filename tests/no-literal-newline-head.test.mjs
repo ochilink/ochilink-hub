@@ -19,7 +19,7 @@ test('public HTML heads do not contain visible literal backslash-n sequences', (
     assert.equal(
       head.includes('\\n'),
       false,
-      page + ' contains a literal \\n in <head>',
+      page + ' contains a literal backslash-n sequence in <head>',
     );
   }
 });
