@@ -60,3 +60,12 @@ test('rental admin uses a hamburger drawer on mobile', () => {
   assert.match(page, /\.admin-shell\.menu-open \.admin-sidebar\{transform:translateX\(0\)\}/);
   assert.match(page, /setAdminMenu\(false\)/);
 });
+
+
+test('rental admin fee GET and PUT actions are wired in the Hub API', () => {
+  const api = fs.readFileSync(new URL('../api/hub.js', import.meta.url), 'utf8');
+  assert.match(api, /req\.method === 'GET' && action === 'fees'/);
+  assert.match(api, /rentalFeeAdminSnapshot\(pool\)/);
+  assert.match(api, /req\.method === 'PUT' && action === 'fees'/);
+  assert.match(api, /updateRentalFees\(client, user\.id, body\)/);
+});
