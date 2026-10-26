@@ -37,7 +37,7 @@
       </div>
       <div class="actions">
         <button class="btn primary" id="downloadPdf">Download Application PDF</button>
-        <a class="btn secondary" href="/account/">Open My Account</a>
+        <a class="btn secondary" id="openAccount" href="/account/">Open My Account</a>
       </div>
       <p class="note">Your application data is encrypted in Ochilink. The PDF is generated in your browser from the verified application returned after payment.</p>
     </main>
@@ -71,6 +71,13 @@
   document.getElementById('propertyAddress').textContent=property.address||'—';
   document.getElementById('status').textContent=payload.status==='submitted'?'Submitted':(payload.status||'Submitted');
   document.getElementById('totalPaid').textContent=money(payload.total_cents);
+
+  try{
+    const session=await fetch('/api/hub?resource=customer-auth&action=session',{cache:'no-store'}).then(r=>r.ok?r.json():null);
+    if(session?.customer){
+      document.getElementById('openAccount').href='/account/';
+    }
+  }catch{}
 
   const safe=v=>String(v??'').trim()||'—';
   const addSection=(doc,title,items,state)=>{
