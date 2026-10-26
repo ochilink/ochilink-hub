@@ -1,6 +1,6 @@
 import { createSmokeTestHandler } from './_admin-live-smoke-test.js';
 import { featureRequest, capabilities } from '../lib/features.js';
-import { useMfa, encryptionReady } from '../lib/security.js';
+import { useMfa, encryptionReady, canonicalOrigin } from '../lib/security.js';
 import { queueMail, flushMail } from '../lib/mail.js';
 import { checkout, prepareCheckout, stripeReady, stripeClient } from '../lib/payments.js';
 import { reserveSlot } from '../lib/scheduling.js';
