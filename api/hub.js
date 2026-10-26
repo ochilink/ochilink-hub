@@ -383,6 +383,8 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                         null,
                 });
             }
+            if (resource === 'canonical-origin' && req.method === 'GET')
+                return res.json({ origin: canonicalOrigin() });
             if (resource === 'rental' && req.method === 'GET') {
                 const action = String(req.query?.action || 'fees');
                 if (action === 'fees') return res.json(await getRentalFees(pool));
