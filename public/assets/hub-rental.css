@@ -21,8 +21,8 @@
     --muted:#CBD5E1;
     --muted-2:#94A3B8;
     --green:#447E37;
-    --green-dark:#35672D;
-    --green-light:rgba(68,126,55,.14);
+    --green-dark:#A7E99A;
+    --green-light:rgba(68,126,55,.22);
     --green-ring:rgba(68,126,55,.28);
     --sidebar-bg:#101725;
     --input-bg:#141B2A;
@@ -44,6 +44,10 @@ input,select,textarea {
     color:var(--text) !important;
 }
 input::placeholder,textarea::placeholder { color:var(--muted-2) !important; opacity:1; }
+input[type="date"] { color-scheme:light; }
+[data-theme=dark] input[type="date"] { color-scheme:dark; }
+input[type="date"]::-webkit-calendar-picker-indicator { opacity:.88; }
+[data-theme=dark] input[type="date"]::-webkit-calendar-picker-indicator { filter:invert(1) brightness(1.7); opacity:1; }
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible {
     outline:2px solid var(--green) !important;
     outline-offset:2px;
