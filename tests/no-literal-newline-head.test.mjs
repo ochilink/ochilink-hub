@@ -27,6 +27,9 @@ test('public HTML heads do not contain visible literal backslash-n sequences', (
 
 test('public Login routes customers to the customer account, not Admin', () => {
   const html = fs.readFileSync(new URL('../public/index.html', import.meta.url), 'utf8');
-  assert.match(html, /href:"\/account\/"[^}]*children:"Login →"/);
-  assert.doesNotMatch(html, /href:"\/admin\/"[^}]*children:"Login →"/);
+  const loginIndex = html.indexOf('children:"Login →"');
+  assert.ok(loginIndex > 0, 'public Login label should exist');
+  const context = html.slice(Math.max(0, loginIndex - 700), loginIndex + 100);
+  assert.ok(context.includes('href:"/account/"'), 'public Login should target /account/');
+  assert.equal(context.includes('href:"/admin/"'), false, 'public Login must not target /admin/');
 });
