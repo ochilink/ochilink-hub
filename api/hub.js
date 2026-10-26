@@ -653,6 +653,14 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     });
                     return res.json(result);
                 }
+                if (req.method === 'GET' && action === 'fees')
+                    return res.json(await rentalFeeAdminSnapshot(pool));
+                if (req.method === 'PUT' && action === 'fees') {
+                    const result = await transaction(pool, (client) =>
+                        updateRentalFees(client, user.id, body),
+                    );
+                    return res.json({ config: result });
+                }
                 fail(400, 'Invalid rental admin action.');
             }
             if (resource === 'app-preview') {
