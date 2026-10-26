@@ -158,3 +158,12 @@ test('rental PDF universally formats human-readable display text', () => {
   assert.match(account, /sentenceCase\(x\.rent\)/);
   assert.match(account, /sentenceCase\(x\.reason\)/);
 });
+
+
+test('rental PDF uses structured two-column form layout', () => {
+  const account = fs.readFileSync(new URL('../public/account/index.html', import.meta.url), 'utf8');
+  assert.match(account, /colWidth=\(right-left-gap\)\/2/);
+  assert.match(account, /item\.labelText\.toUpperCase\(\)/);
+  assert.match(account, /doc\.line\(x,lineY,x\+colWidth,lineY\)/);
+  assert.match(account, /String\(title\)\.toUpperCase\(\)/);
+});
