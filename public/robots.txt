@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+Disallow: /api/
+Disallow: /rental-application/thank-you
+
+Sitemap: https://ochilink.com/sitemap.xml
