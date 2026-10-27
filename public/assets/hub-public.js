@@ -554,6 +554,7 @@ window.HubVisitorTools = function HubVisitorTools({ React }) {
                 ),
             ),
         );
+    if (consent) return null;
     return h(
         'div',
         {
