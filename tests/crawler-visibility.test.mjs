@@ -20,7 +20,7 @@ test('robots and sitemap offer only publicly launched pages', () => {
   assert.match(robots, /User-agent: \*/);
   assert.match(robots, /Disallow: \/admin/);
   assert.match(robots, /Disallow: \/account/);
-  assert.match(robots, /Disallow: \/api\//);
+  assert.doesNotMatch(robots, /Disallow: \/api\//);
   assert.match(robots, /Sitemap: https:\/\/ochilink\.com\/sitemap\.xml/);
   assert.match(sitemap, /<loc>https:\/\/ochilink\.com\/<\/loc>/);
   assert.match(sitemap, /<loc>https:\/\/ochilink\.com\/booking\/<\/loc>/);
