@@ -486,3 +486,37 @@ test('public pages do not render literal backslash-n artifacts near the head', a
         assert.doesNotMatch(html, /\\n<\/head>/);
     }
 });
+
+
+test('admin exposes General Media Library alongside HTML previews', async () => {
+    const [admin, media] = await Promise.all([
+        readFile('public/admin/index.html', 'utf8'),
+        readFile('public/admin/media/index.html', 'utf8'),
+    ]);
+    assert.match(admin, /href:"\/admin\/media\//);
+    assert.match(admin, /children:"Media Library"/);
+    assert.match(admin, /href:"\/admin\/previews\//);
+    assert.match(media, /General Media Library/);
+    assert.match(media, /accept="image\/jpeg,image\/png,image\/webp"/);
+    assert.match(media, /Use as app cover/);
+    assert.match(media, /Customer\/private documents never belong here/);
+});
+
+test('media library API is admin-only and uses dedicated storage configuration', async () => {
+    const [api, storage, migration, env] = await Promise.all([
+        readFile('api/hub.js', 'utf8'),
+        readFile('lib/media-storage.js', 'utf8'),
+        readFile('database/migrations/017_general_media_library.sql', 'utf8'),
+        readFile('.env.example', 'utf8'),
+    ]);
+    assert.match(api, /resource === 'media-library'/);
+    assert.match(api, /assignMediaAsAppCover/);
+    assert.match(storage, /MEDIA_BLOB_READ_WRITE_TOKEN/);
+    assert.match(storage, /image\/jpeg/);
+    assert.match(storage, /image\/png/);
+    assert.match(storage, /image\/webp/);
+    assert.match(storage, /12 \* 1024 \* 1024/);
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS media_assets/);
+    assert.match(migration, /017_general_media_library/);
+    assert.match(env, /MEDIA_BLOB_READ_WRITE_TOKEN=/);
+});
