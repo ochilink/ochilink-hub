@@ -418,3 +418,21 @@ test('footer exposes a direct rental application link', async () => {
     assert.match(html, /href:"\/rental-application\//);
     assert.match(html, /children:"Rental Application"/);
 });
+
+
+test('footer links to the public contact page and Instagram profiles', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /href:"\/contact\//);
+    assert.match(html, /children:"Contact Ochilink"/);
+    assert.match(html, /instagram\.com\/ramonemiami\//);
+    assert.match(html, /instagram\.com\/rowprorealty\//);
+});
+
+test('contact page exposes Ochilink contact options', async () => {
+    const html = await readFile('public/contact/index.html', 'utf8');
+    assert.match(html, /Contact Ochilink/);
+    assert.match(html, /mailto:ramone@ochilink\.com/);
+    assert.match(html, /href="\/booking\//);
+    assert.match(html, /instagram\.com\/ramonemiami\//);
+    assert.match(html, /instagram\.com\/rowprorealty\//);
+});
