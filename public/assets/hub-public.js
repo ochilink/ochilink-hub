@@ -173,6 +173,10 @@ window.OchilinkConsultation = function OchilinkConsultation({
                                     result.error || 'Request failed.',
                                 );
                             setSent(true);
+                            window.OchilinkTracking?.track(
+                                'ochilink_consultation_submitted',
+                                { section: 'consultation', action: 'submit', result: 'success' },
+                            );
                             setMessage(
                                 'Request received. We’ll contact you by email to discuss availability.',
                             );
@@ -387,6 +391,7 @@ window.HubVisitorTools = function HubVisitorTools({ React }) {
     const choose = (value) => {
         localStorage.setItem('ochi-analytics-consent', value);
         setConsent(value);
+        window.OchilinkTracking?.consentChanged(value);
         if (value !== 'yes')
             sessionStorage.removeItem('ochi-analytics-session');
     };
