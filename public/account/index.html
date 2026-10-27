@@ -40,7 +40,7 @@
   }catch{}
 })();
 </script>
-</head>
+<script src="/assets/hub-tracking.js"></script>\n</head>
 <body>
   <section id="authView" class="authwrap">
     <div class="auth">
@@ -187,7 +187,7 @@ async function request(resource, action, options={}){
   if(!r.ok)throw new Error(data.error||'Request failed.');return data;
 }
 function showAuth(msg=''){vaultView.classList.add('hidden');authView.classList.remove('hidden');$('#authMsg').textContent=msg}
-function showVault(customer){state.customer=customer;authView.classList.add('hidden');vaultView.classList.remove('hidden');$('#customerName').textContent=customer.name||'Ochilink customer';$('#customerEmail').textContent=customer.email||''}
+function showVault(customer){state.customer=customer;authView.classList.add('hidden');vaultView.classList.remove('hidden');$('#customerName').textContent=customer.name||'Ochilink customer';$('#customerEmail').textContent=customer.email||'';window.OchilinkTracking?.track('ochilink_customer_vault_opened',{section:'customer_vault',action:'open'})}
 async function bootstrap(){
   const qs=new URLSearchParams(location.search);
   try{
@@ -412,7 +412,7 @@ function render(){
   $('#emptyApps').classList.toggle('hidden',d.applications.length>0);
   $('#applications').querySelectorAll('[data-app-pdf]').forEach(btn=>btn.addEventListener('click',async()=>{
     const old=btn.textContent;btn.disabled=true;btn.textContent='Preparing…';
-    try{await downloadApplicationPdf(btn.dataset.appPdf)}
+    try{await downloadApplicationPdf(btn.dataset.appPdf);window.OchilinkTracking?.track('ochilink_rental_pdf_downloaded',{section:'customer_vault',action:'download',item_type:'rental_application'})}
     catch(e){alert(e.message||'Unable to generate PDF.')}
     finally{btn.disabled=false;btn.textContent=old}
   }));
@@ -478,7 +478,7 @@ $('#uploadForm').addEventListener('submit',async e=>{e.preventDefault();const fi
   await request('customer-documents','complete-upload',{method:'POST',body:{document_id:begin.document_id,pathname:blob.pathname,etag:blob.etag||''}});
   msg.textContent='Upload complete.';$('#fileInput').value='';setTimeout(()=>$('#uploadDialog').close(),400);await loadData();
 }catch(err){msg.textContent=err.message;msg.classList.add('error')}});
-filesBody.addEventListener('click',async e=>{const dl=e.target.closest('[data-download]');if(dl){try{const x=await request('customer-documents','download',{query:{id:dl.dataset.download}});location.href=x.url}catch(err){alert(err.message)}return}const b=e.target.closest('[data-action]');if(!b)return;try{await request('customer-documents','document',{method:'PUT',body:{id:b.dataset.id,action:b.dataset.action}});await loadData()}catch(err){alert(err.message)}});
+filesBody.addEventListener('click',async e=>{const dl=e.target.closest('[data-download]');if(dl){try{const doc=state.data.documents.find(x=>x.id===dl.dataset.download);const x=await request('customer-documents','download',{query:{id:dl.dataset.download}});window.OchilinkTracking?.track('ochilink_document_opened',{section:'customer_vault',action:'open',item_type:doc?.document_type||'other'});location.href=x.url}catch(err){alert(err.message)}return}const b=e.target.closest('[data-action]');if(!b)return;try{await request('customer-documents','document',{method:'PUT',body:{id:b.dataset.id,action:b.dataset.action}});await loadData()}catch(err){alert(err.message)}});
 bootstrap();
 </script>
 </body>
