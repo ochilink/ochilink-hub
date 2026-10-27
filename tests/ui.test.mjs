@@ -411,3 +411,10 @@ test('landing hero stats use stable label keys during loading', async () => {
     assert.doesNotMatch(html, /\}\,h\.k\)\)/);
     assert.match(html, /\}\,h\.v\)\)/);
 });
+
+
+test('footer exposes a direct rental application link', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /href:"\/rental-application\//);
+    assert.match(html, /children:"Rental Application"/);
+});
