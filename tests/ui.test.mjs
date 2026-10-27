@@ -401,3 +401,13 @@ test('landing mobile controls stack search below filters and footer uses Ochilin
     assert.match(html, /footer-ochilink-logo/);
     assert.match(html, /\/assets\/ochilink-final-logo\.svg/);
 });
+
+
+test('landing hero stats use stable label keys during loading', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /Published Apps/);
+    assert.match(html, /Live Now/);
+    assert.match(html, /Consultation/);
+    assert.doesNotMatch(html, /\}\,h\.k\)\)/);
+    assert.match(html, /\}\,h\.v\)\)/);
+});
