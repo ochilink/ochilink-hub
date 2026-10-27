@@ -441,3 +441,12 @@ test('contact page exposes Ochilink contact options', async () => {
     assert.match(html, /instagram\.com\/ramonemiami\//);
     assert.match(html, /instagram\.com\/rowprorealty\//);
 });
+
+
+test('footer live sites are rendered dynamically from live published app data', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /hub\.apps\.filter\(\(app\)=>app\.status==="live"&&app\.production_link\)/);
+    assert.match(html, /children:app\.name/);
+    assert.doesNotMatch(html, /href:"https:\/\/ramonemiami\.com"/);
+    assert.doesNotMatch(html, /href:"https:\/\/taxdrill\.com"/);
+});
