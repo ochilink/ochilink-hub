@@ -73,3 +73,27 @@ test('rental mobile header uses two rows and keeps sign out in the drawer', () =
   assert.match(css, /grid-template-areas:[\s\S]*"brand brand"[\s\S]*"menu actions"/);
   assert.match(css, /\.rental-header-signout\s*\{[\s\S]*display:none !important/);
 });
+
+
+test('rental dark mode keeps date controls and green status text readable', () => {
+  const css = fs.readFileSync(new URL('../public/assets/hub-rental.css', import.meta.url), 'utf8');
+  assert.match(css, /\[data-theme=dark\][\s\S]*--green-dark:#A7E99A/);
+  assert.match(css, /\[data-theme=dark\] input\[type="date"\][\s\S]*color-scheme:dark/);
+  assert.match(css, /\[data-theme=dark\] input\[type="date"\]::-webkit-calendar-picker-indicator[\s\S]*filter:invert\(1\) brightness\(1\.7\)/);
+});
+
+
+test('rental date picker uses explicit theme-aware calendar icons', () => {
+  const css = fs.readFileSync(new URL('../public/assets/hub-rental.css', import.meta.url), 'utf8');
+  assert.match(css, /stroke='%230F172A'/);
+  assert.match(css, /stroke='%23F8FAFC'/);
+  assert.match(css, /\[data-theme=dark\] input\[type="date"\]::-webkit-calendar-picker-indicator/);
+});
+
+
+test('final rental pay button uses dark text only in dark mode', () => {
+  const page = fs.readFileSync(new URL('../public/rental-application/index.html', import.meta.url), 'utf8');
+  const css = fs.readFileSync(new URL('../public/assets/hub-rental.css', import.meta.url), 'utf8');
+  assert.match(page, /rental-pay-submit-btn/);
+  assert.match(css, /\[data-theme=dark\] \.rental-pay-submit-btn\s*\{[\s\S]*color:#0F172A !important/);
+});
