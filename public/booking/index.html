@@ -19,7 +19,7 @@
   <link rel="stylesheet" href="/assets/hub-typography.css">
   <link rel="stylesheet" href="/assets/hub-readability.css">
   <link rel="stylesheet" href="/assets/hub-loader.css">
-</head>
+  <script src="/assets/hub-tracking.js"></script>\n</head>
 <body data-hub-page="booking">
   <div id="payment-notice" role="status" style="display:none;padding:18px;text-align:center;background:#0B0F1A;color:#00FFC6"></div><div id="root"></div>
 <script>
@@ -27,6 +27,7 @@ const paymentState = new URLSearchParams(location.search).get('payment');
 const notice = document.getElementById('payment-notice');
 const tokenKey = 'ochilink-booking-token';
 if (paymentState === 'returned') {
+    window.OchilinkTracking?.track('ochilink_consultation_payment_returned',{section:'booking',action:'payment_return'});
     sessionStorage.removeItem(tokenKey);
     notice.style.display = 'block';
     notice.textContent = 'You returned from Stripe. Payment verification may still be processing. A confirmation email follows once payment is verified.';
@@ -55,6 +56,7 @@ if (paymentState === 'returned') {
             }
             const url = new URL(data.url);
             if (url.protocol !== 'https:' || url.hostname !== 'checkout.stripe.com') throw new Error('Invalid checkout URL');
+            window.OchilinkTracking?.track('ochilink_consultation_checkout_started',{section:'booking',action:'resume_checkout'});
             location.assign(url.href);
         } catch (error) {
             notice.firstChild.textContent = error.message + ' ';

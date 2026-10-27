@@ -345,6 +345,14 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                 requestSizeLimit
             )
                 fail(413, 'Request too large.');
+            if (resource === 'tracking-config' && req.method === 'GET') {
+                const configured = String(process.env.GTM_CONTAINER_ID || '').trim();
+                return res.json({
+                    container_id: /^GTM-[A-Z0-9]+$/i.test(configured)
+                        ? configured.toUpperCase()
+                        : null,
+                });
+            }
             const pool = poolProvider();
             if (resource === 'public' && req.method === 'GET') {
                 const apps = await pool.query(
