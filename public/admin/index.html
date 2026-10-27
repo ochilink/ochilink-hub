@@ -3,7 +3,16 @@
 <head>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
-  <link rel="manifest" href="/assets/site.webmanifest">
+  <script>
+(function(){
+  if (location.hostname === 'ochilink.com' || location.hostname === 'www.ochilink.com') {
+    const manifest = document.createElement('link');
+    manifest.rel = 'manifest';
+    manifest.href = '/assets/site.webmanifest';
+    document.head.appendChild(manifest);
+  }
+})();
+</script>
   <meta name="theme-color" content="#0B0F1A">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
