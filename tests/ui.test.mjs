@@ -426,6 +426,11 @@ test('footer links to the public contact page and Instagram profiles', async () 
     assert.match(html, /children:"Contact Ochilink"/);
     assert.match(html, /instagram\.com\/ramonemiami\//);
     assert.match(html, /instagram\.com\/rowprorealty\//);
+    assert.match(html, /instagram\.com\/ochilink\//);
+    assert.match(html, /facebook\.com\/OchiLiink/);
+    assert.match(html, /youtube\.com\/@OchiLink/);
+    assert.match(html, /x\.com\/OchiLink\/status\/1865078098674262345/);
+    assert.match(html, /tiktok\.com\/@ochilink/);
 });
 
 test('contact page exposes Ochilink contact options', async () => {
