@@ -86,3 +86,11 @@ test('public surfaces use shared consent-gated tracking instead of direct gtag',
     assert.match(api, /GTM_CONTAINER_ID/);
     assert.match(env, /GTM_CONTAINER_ID=/);
 });
+
+
+test('tracking bootstrap uses standard GTM script insertion semantics', async () => {
+    const script = await readFile('public/assets/hub-tracking.js', 'utf8');
+    assert.match(script, /getElementsByTagName\('script'\)\[0\]/);
+    assert.match(script, /insertBefore\(script, firstScript\)/);
+    assert.match(script, /googletagmanager\.com\/gtm\.js\?id=/);
+});
