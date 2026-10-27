@@ -73,6 +73,7 @@
             const id = await getContainerId();
             if (!id || !hasConsent()) return false;
 
+            const layerName = 'dataLayer';
             const layer = dataLayer();
             layer.push({
                 event: 'ochilink_consent_granted',
@@ -83,13 +84,23 @@
                 event: 'gtm.js',
             });
 
+            // Use Google's standard GTM bootstrap semantics after consent.
+            // Keeping the standard insertion pattern improves Tag Assistant
+            // compatibility while preserving Ochilink's consent gate.
+            const firstScript = document.getElementsByTagName('script')[0];
             const script = document.createElement('script');
+            const layerParam = layerName !== 'dataLayer' ? '&l=' + layerName : '';
             script.async = true;
             script.src =
                 'https://www.googletagmanager.com/gtm.js?id=' +
-                encodeURIComponent(id);
+                encodeURIComponent(id) +
+                layerParam;
             script.dataset.ochilinkGtm = id;
-            document.head.appendChild(script);
+            if (firstScript?.parentNode) {
+                firstScript.parentNode.insertBefore(script, firstScript);
+            } else {
+                document.head.appendChild(script);
+            }
             return true;
         })().finally(() => {
             loading = null;
