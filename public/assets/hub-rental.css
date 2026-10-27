@@ -101,3 +101,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         display:none !important;
     }
 }
+
+[data-theme=dark] .rental-pay-submit-btn {
+    color:#0F172A !important;
+}
+[data-theme=dark] .rental-pay-submit-btn svg {
+    stroke:currentColor !important;
+}
