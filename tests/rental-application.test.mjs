@@ -89,3 +89,11 @@ test('rental date picker uses explicit theme-aware calendar icons', () => {
   assert.match(css, /stroke='%23F8FAFC'/);
   assert.match(css, /\[data-theme=dark\] input\[type="date"\]::-webkit-calendar-picker-indicator/);
 });
+
+
+test('final rental pay button uses dark text only in dark mode', () => {
+  const page = fs.readFileSync(new URL('../public/rental-application/index.html', import.meta.url), 'utf8');
+  const css = fs.readFileSync(new URL('../public/assets/hub-rental.css', import.meta.url), 'utf8');
+  assert.match(page, /rental-pay-submit-btn/);
+  assert.match(css, /\[data-theme=dark\] \.rental-pay-submit-btn\s*\{[\s\S]*color:#0F172A !important/);
+});
