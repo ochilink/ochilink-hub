@@ -471,3 +471,18 @@ test('public app search has stable form identifiers', async () => {
     assert.match(html, /name:"apps_search"/);
     assert.match(html, /type:"search"/);
 });
+
+
+test('public pages do not render literal backslash-n artifacts near the head', async () => {
+    const paths = [
+        'public/index.html',
+        'public/booking/index.html',
+        'public/rental-application/index.html',
+        'public/account/index.html',
+    ];
+    for (const path of paths) {
+        const html = await readFile(path, 'utf8');
+        assert.doesNotMatch(html, /<\/script>\\n/);
+        assert.doesNotMatch(html, /\\n<\/head>/);
+    }
+});
