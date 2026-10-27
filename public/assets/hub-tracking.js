@@ -102,12 +102,15 @@
         if (!hasConsent()) return false;
         const event = String(eventName || '').trim();
         if (!/^ochilink_[a-z0-9_]{1,60}$/.test(event)) return false;
+        const payload = safeData(data);
 
-        dataLayer().push({
-            event,
-            ...safeData(data),
+        void init().then((ready) => {
+            if (!ready || !hasConsent()) return;
+            dataLayer().push({
+                event,
+                ...payload,
+            });
         });
-        void init();
         return true;
     }
 
