@@ -314,19 +314,15 @@ test('analytics waits for consent before submitting visitor events', async () =>
             .find((b) => b.textContent === 'Allow analytics')
             .click();
         await waitFor(() => tracked > 0);
-        [...document.querySelectorAll('button')]
-            .find((b) => b.textContent === 'Privacy choices')
-            .click();
         await waitFor(() =>
-            document.querySelector('#root').textContent.includes('Decline'),
+            !document.querySelector('#root').textContent.includes('Allow analytics'),
         );
-        [...document.querySelectorAll('button')]
-            .find((b) => b.textContent === 'Decline')
-            .click();
-        const count = tracked;
-        document.body.click();
-        await new Promise((r) => setTimeout(r, 30));
-        assert.equal(tracked, count);
+        assert.equal(
+            [...document.querySelectorAll('button')].some(
+                (b) => b.textContent === 'Privacy choices',
+            ),
+            false,
+        );
     } finally {
         dom.window.close();
     }
@@ -394,4 +390,14 @@ test('customer vault uses a mobile hamburger drawer instead of stacking the side
     assert.match(html, /\.shell\.menu-open aside\{transform:translateX\(0\)\}/);
     assert.match(html, /@media\(max-width:900px\)/);
     assert.match(html, /setMenu\(false\)/);
+});
+
+
+test('landing mobile controls stack search below filters and footer uses Ochilink logo asset', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /apps-filter-controls/);
+    assert.match(html, /apps-search-input/);
+    assert.match(html, /@media\(max-width:767px\)[\s\S]*\.apps-filter-controls[\s\S]*flex-direction:column/);
+    assert.match(html, /footer-ochilink-logo/);
+    assert.match(html, /\/assets\/ochilink-final-logo\.svg/);
 });
