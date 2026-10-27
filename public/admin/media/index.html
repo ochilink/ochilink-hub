@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Media Library | Ochilink Admin</title>
+  <style>
+    :root{--bg:#0b0f1a;--panel:#131a28;--panel2:#192235;--line:#27344d;--text:#edf4ff;--muted:#90a0b8;--lime:#00ffc6;--red:#ff6d7d}
+    *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif}
+    button,input,select{font:inherit}.wrap{max-width:1440px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:22px}
+    h1,h2{margin:0}.top p{margin:6px 0 0;color:var(--muted)}.btn{border:1px solid var(--line);background:#172137;color:var(--text);border-radius:10px;padding:9px 12px;cursor:pointer;text-decoration:none}
+    .btn:hover{border-color:#42597f}.primary{background:var(--lime);border-color:var(--lime);color:#061411;font-weight:800}.danger{background:#321820;border-color:#6d2e3c;color:#ffdce2}
+    .panel{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:18px;margin-bottom:16px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    .field{width:100%;background:#101827;border:1px solid var(--line);color:var(--text);border-radius:10px;padding:10px 12px}.small{font-size:12px;color:var(--muted)}
+    .actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.library{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.card{border:1px solid var(--line);border-radius:14px;background:#0f1724;overflow:hidden}
+    .thumb{aspect-ratio:16/9;background:#080d16}.thumb img{width:100%;height:100%;object-fit:cover}.body{padding:12px;display:grid;gap:9px}.name{font-weight:800;overflow-wrap:anywhere}.meta{font-size:11px;color:var(--muted)}
+    .notice{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#eafcf7;color:#06261e;padding:10px 14px;border-radius:999px;font-size:12px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:10}.error{background:#3a151c;color:#ffdfe5}.hidden{display:none!important}.empty{padding:36px;text-align:center;color:var(--muted);grid-column:1/-1}
+    @media(max-width:1000px){.library{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:720px){.wrap{padding:14px}.top{display:block}.top .actions{margin-top:12px}.grid,.library{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div><h1>General Media Library</h1><p>Reusable public branding images for Ochilink apps. Customer/private documents never belong here.</p></div>
+    <div class="actions"><a class="btn" href="/admin/">← Main Admin</a><a class="btn" href="/admin/previews/">HTML Previews</a><a class="btn" href="/" target="_blank" rel="noopener">Open Hub ↗</a></div>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Upload image</h2>
+      <p class="small">JPG, PNG, or WebP up to 12 MB. Choose an app now or leave the asset in the shared library.</p>
+      <div style="display:grid;gap:10px;margin-top:14px">
+        <select id="uploadApp" class="field"></select>
+        <input id="fileInput" class="field" type="file" accept="image/jpeg,image/png,image/webp">
+        <input id="labelInput" class="field" maxlength="160" placeholder="Internal label (optional)">
+        <input id="altInput" class="field" maxlength="300" placeholder="Alt text (recommended)">
+        <button id="uploadBtn" class="btn primary">Upload to Media Library</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Filter library</h2>
+      <p class="small">Filter by app assignment. Archived assets stay out of normal results.</p>
+      <div style="display:grid;gap:10px;margin-top:14px">
+        <select id="filterApp" class="field"></select>
+        <button id="refreshBtn" class="btn">Refresh library</button>
+        <div id="summary" class="small"></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="panel">
+    <div class="actions" style="justify-content:space-between"><h2>Images</h2><span class="small">Assigning a cover updates the public Apps & Services card.</span></div>
+    <div id="library" class="library" style="margin-top:14px"></div>
+  </section>
+</div>
+<div id="notice" class="notice hidden"></div>
+
+<script>
+const $=s=>document.querySelector(s);
+let state={apps:[],media:[]};
+function esc(v){return String(v??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function toast(msg,error=false){const n=$('#notice');n.textContent=msg;n.classList.toggle('error',error);n.classList.remove('hidden');setTimeout(()=>n.classList.add('hidden'),5000)}
+async function api(action,{method='GET',body,query={}}={}){const u=new URL('/api/hub',location.origin);u.searchParams.set('resource','media-library');u.searchParams.set('action',action);Object.entries(query).forEach(([k,v])=>{if(v!=null&&v!=='')u.searchParams.set(k,v)});const init={method,headers:{}};if(body!==undefined){init.headers['Content-Type']='application/json';init.body=JSON.stringify(body)}const r=await fetch(u,init);const j=await r.json().catch(()=>({}));if(!r.ok){if(r.status===401){location.href='/admin/';throw new Error('Admin session expired.')}throw new Error(j.error||'Request failed.')}return j}
+function options(selected='',includeAll=false){const first=includeAll?'<option value="">All apps / shared</option>':'<option value="">Shared library (no app)</option>';return first+state.apps.map(a=>'<option value="'+a.id+'" '+(a.id===selected?'selected':'')+'>'+esc(a.name)+'</option>').join('')}
+async function imageSize(file){if('createImageBitmap'in window){const b=await createImageBitmap(file);const out={width:b.width,height:b.height};b.close();return out}return new Promise((resolve,reject)=>{const img=new Image(),url=URL.createObjectURL(file);img.onload=()=>{URL.revokeObjectURL(url);resolve({width:img.naturalWidth,height:img.naturalHeight})};img.onerror=()=>{URL.revokeObjectURL(url);reject(new Error('Unable to read image dimensions.'))};img.src=url})}
+async function load(){try{const filter=$('#filterApp').value||'';state=await api('list',{query:{app_id:filter}});renderSelectors();renderLibrary()}catch(e){toast(e.message,true)}}
+function renderSelectors(){const upload=$('#uploadApp'),filter=$('#filterApp');const u=upload.value,f=filter.value;upload.innerHTML=options(u,false);filter.innerHTML=options(f,true);if(u)upload.value=u;if(f)filter.value=f}
+function renderLibrary(){const box=$('#library');$('#summary').textContent=state.media.length+' active image'+(state.media.length===1?'':'s');if(!state.media.length){box.innerHTML='<div class="empty">No media assets found for this filter.</div>';return}box.innerHTML=state.media.map(m=>'<article class="card" data-id="'+m.id+'"><div class="thumb"><img src="'+esc(m.public_url)+'" alt="'+esc(m.alt_text||'')+'" loading="lazy"></div><div class="body"><div><div class="name">'+esc(m.label||m.original_name)+'</div><div class="meta">'+esc(m.content_type)+' · '+Math.round(Number(m.byte_size||0)/1024)+' KB'+(m.width&&m.height?' · '+m.width+'×'+m.height:'')+'</div></div><select class="field asset-app">'+options(m.app_id,false)+'</select><input class="field asset-label" maxlength="160" value="'+esc(m.label||'')+'" placeholder="Internal label"><input class="field asset-alt" maxlength="300" value="'+esc(m.alt_text||'')+'" placeholder="Alt text"><div class="actions"><button class="btn" data-save>Save metadata</button><button class="btn primary" data-cover>Use as app cover</button><a class="btn" href="'+esc(m.public_url)+'" target="_blank" rel="noopener">Open ↗</a><button class="btn danger" data-archive>Archive</button></div></div></article>').join('')}
+$('#filterApp').addEventListener('change',load);$('#refreshBtn').addEventListener('click',load);
+$('#uploadBtn').addEventListener('click',async()=>{const file=$('#fileInput').files[0];if(!file)return toast('Choose an image.',true);if(!['image/jpeg','image/png','image/webp'].includes(file.type))return toast('Use a JPG, PNG, or WebP image.',true);try{const dims=await imageSize(file);toast('Authorizing media upload…');const begin=await api('begin-upload',{method:'POST',body:{app_id:$('#uploadApp').value||null,filename:file.name,byte_size:file.size,content_type:file.type}});const put=await fetch(begin.upload_url,{method:'PUT',headers:{'Content-Type':file.type,'x-vercel-blob-access':'public'},body:file});if(!put.ok)throw new Error('Media upload failed.');const blob=await put.json();if(blob.pathname!==begin.pathname)throw new Error('Storage returned an unexpected media path.');await api('complete-upload',{method:'POST',body:{media_id:begin.media_id,pathname:blob.pathname,public_url:blob.url,width:dims.width,height:dims.height,label:$('#labelInput').value,alt_text:$('#altInput').value}});$('#fileInput').value='';$('#labelInput').value='';$('#altInput').value='';toast('Image uploaded to Media Library.');await load()}catch(e){toast(e.message,true)}});
+$('#library').addEventListener('click',async e=>{const card=e.target.closest('[data-id]');if(!card)return;const id=card.dataset.id,appId=card.querySelector('.asset-app').value||null;try{if(e.target.closest('[data-save]')){await api('update',{method:'PUT',body:{id,app_id:appId,label:card.querySelector('.asset-label').value,alt_text:card.querySelector('.asset-alt').value}});toast('Media metadata saved.');await load()}else if(e.target.closest('[data-cover]')){if(!appId)return toast('Choose an app before assigning a cover.',true);await api('assign-cover',{method:'PUT',body:{media_id:id,app_id:appId}});toast('App cover updated.');await load()}else if(e.target.closest('[data-archive]')){if(!confirm('Archive this media asset?'))return;await api('archive',{method:'DELETE',body:{id}});toast('Media asset archived.');await load()}}catch(err){toast(err.message,true)}});
+load();
+</script>
+</body>
+</html>
