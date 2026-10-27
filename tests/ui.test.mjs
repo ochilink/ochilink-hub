@@ -450,3 +450,24 @@ test('footer live sites are rendered dynamically from live published app data', 
     assert.doesNotMatch(html, /href:"https:\/\/ramonemiami\.com"/);
     assert.doesNotMatch(html, /href:"https:\/\/taxdrill\.com"/);
 });
+
+
+test('protected previews do not eagerly request the web manifest', async () => {
+    const [landing, booking, admin] = await Promise.all([
+        readFile('public/index.html', 'utf8'),
+        readFile('public/booking/index.html', 'utf8'),
+        readFile('public/admin/index.html', 'utf8'),
+    ]);
+    for (const html of [landing, booking, admin]) {
+        assert.doesNotMatch(html, /<link rel="manifest" href="\/assets\/site\.webmanifest">/);
+        assert.match(html, /location\.hostname === 'ochilink\.com'/);
+        assert.match(html, /manifest\.href = '\/assets\/site\.webmanifest'/);
+    }
+});
+
+test('public app search has stable form identifiers', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /id:"apps-search"/);
+    assert.match(html, /name:"apps_search"/);
+    assert.match(html, /type:"search"/);
+});
