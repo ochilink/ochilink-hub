@@ -418,3 +418,35 @@ test('footer exposes a direct rental application link', async () => {
     assert.match(html, /href:"\/rental-application\//);
     assert.match(html, /children:"Rental Application"/);
 });
+
+
+test('footer links to the public contact page and Instagram profiles', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /href:"\/contact\//);
+    assert.match(html, /children:"Contact Ochilink"/);
+    assert.match(html, /instagram\.com\/ramonemiami\//);
+    assert.match(html, /instagram\.com\/rowprorealty\//);
+    assert.match(html, /instagram\.com\/ochilink\//);
+    assert.match(html, /facebook\.com\/OchiLiink/);
+    assert.match(html, /youtube\.com\/@OchiLink/);
+    assert.match(html, /x\.com\/OchiLink\/status\/1865078098674262345/);
+    assert.match(html, /tiktok\.com\/@ochilink/);
+});
+
+test('contact page exposes Ochilink contact options', async () => {
+    const html = await readFile('public/contact/index.html', 'utf8');
+    assert.match(html, /Contact Ochilink/);
+    assert.match(html, /mailto:ramone@ochilink\.com/);
+    assert.match(html, /href="\/booking\//);
+    assert.match(html, /instagram\.com\/ramonemiami\//);
+    assert.match(html, /instagram\.com\/rowprorealty\//);
+});
+
+
+test('footer live sites are rendered dynamically from live published app data', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /hub\.apps\.filter\(\(app\)=>app\.status==="live"&&app\.production_link\)/);
+    assert.match(html, /children:app\.name/);
+    assert.doesNotMatch(html, /href:"https:\/\/ramonemiami\.com"/);
+    assert.doesNotMatch(html, /href:"https:\/\/taxdrill\.com"/);
+});
