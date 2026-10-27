@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /account
+# Public catalog renders from /api/hub; do not block required JS fetches.
+Disallow: /rental-application/thank-you
+
+Sitemap: https://ochilink.com/sitemap.xml
