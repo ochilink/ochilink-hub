@@ -162,7 +162,7 @@ body[data-hub-page='landing'] [data-theme='light'] .app-card-footer {
     color: var(--text-muted) !important;
 }
 
-body[data-hub-page='landing'] [data-theme='light'] :is(.text-white, [class*='text-white/']) {
+body[data-hub-page='landing'] [data-theme='light'] :is(.text-white, [class*='text-white/']):not(a):not(button) {
     color: var(--text) !important;
 }
 
