@@ -520,3 +520,10 @@ test('media library API is admin-only and uses dedicated storage configuration',
     assert.match(migration, /017_general_media_library/);
     assert.match(env, /MEDIA_BLOB_READ_WRITE_TOKEN=/);
 });
+
+
+test('public app cards preserve full cover artwork without cropping', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /object-contain bg-black/);
+    assert.doesNotMatch(html, /object-cover transition duration-500 group-hover:scale-\[1\.04\]/);
+});
