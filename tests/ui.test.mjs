@@ -549,3 +549,10 @@ test('media library provides accessible image sizing help modal', async () => {
     assert.match(html, /closeSizingModal/);
     assert.match(html, /e\.key==='Escape'/);
 });
+
+
+test('admin sidebar exposes the Media Library route', async () => {
+    const html = await readFile('public/admin/index.html', 'utf8');
+    assert.match(html, /id:"Media Library",icon:"▣"/);
+    assert.match(html, /c\.id==="Media Library"\?location\.assign\("\/admin\/media\/"\)/);
+});
