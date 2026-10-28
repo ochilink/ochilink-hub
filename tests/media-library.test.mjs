@@ -110,3 +110,19 @@ test('media currently used as an app cover cannot be archived', async () => {
         /currently assigned as an app cover/,
     );
 });
+
+
+test('media Blob URL validation accepts Vercel public Blob hosts and rejects arbitrary hosts', async () => {
+    const { validateMediaBlobUrl } = await import('../lib/media-storage.js');
+    process.env.MEDIA_BLOB_READ_WRITE_TOKEN = 'vercel_blob_rw_test_store_AdQHY83OPsi4S5eE_example';
+    const pathname = 'media/bull-mountain/example.png';
+    const valid = validateMediaBlobUrl(
+        'https://abc123.public.blob.vercel-storage.com/media/bull-mountain/example.png',
+        pathname,
+    );
+    assert.match(valid, /^https:\/\/abc123\.public\.blob\.vercel-storage\.com\//);
+    assert.throws(
+        () => validateMediaBlobUrl('https://example.com/media/bull-mountain/example.png', pathname),
+        /unexpected host/,
+    );
+});
