@@ -64,6 +64,27 @@
 </div>
 <div id="notice" class="notice hidden"></div>
 
+  <div id="imageSizingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="imageSizingTitle" aria-hidden="true">
+    <div class="modal">
+      <h2 id="imageSizingTitle">App cover image sizing</h2>
+      <p>Wide landscape images fit the Apps &amp; Services cards best.</p>
+      <p><strong>Good cover sizes:</strong></p>
+      <ul>
+        <li>1280 × 720 px</li>
+        <li>1600 × 900 px</li>
+        <li>1920 × 1080 px</li>
+      </ul>
+      <p><strong>Recommended standard:</strong> 1600 × 900 px.</p>
+      <p>Square or portrait artwork can still be uploaded, but it may behave differently depending on how the card is displayed:</p>
+      <ul>
+        <li><strong>Cover-style fitting</strong> can crop the outer edges to fill the frame.</li>
+        <li><strong>Contain-style fitting</strong> preserves the full image but may leave empty space on the sides.</li>
+      </ul>
+      <p>For square artwork that should fill the card without cropping, place the artwork centered on a 1600 × 900 dark or brand-colored background canvas before uploading. Avoid stretching the original artwork.</p>
+      <div class="modal-actions"><button id="imageSizingCloseBtn" class="btn" type="button">Close</button></div>
+    </div>
+  </div>
+
 <script>
 const $=s=>document.querySelector(s);
 let state={apps:[],media:[]};
@@ -86,25 +107,5 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sizingModal.classLi
 $('#library').addEventListener('click',async e=>{const card=e.target.closest('[data-id]');if(!card)return;const id=card.dataset.id,appId=card.querySelector('.asset-app').value||null;try{if(e.target.closest('[data-save]')){await api('update',{method:'PUT',body:{id,app_id:appId,label:card.querySelector('.asset-label').value,alt_text:card.querySelector('.asset-alt').value}});toast('Media metadata saved.');await load()}else if(e.target.closest('[data-cover]')){if(!appId)return toast('Choose an app before assigning a cover.',true);await api('assign-cover',{method:'PUT',body:{media_id:id,app_id:appId}});toast('App cover updated.');await load()}else if(e.target.closest('[data-archive]')){if(!confirm('Archive this media asset?'))return;await api('archive',{method:'DELETE',body:{id}});toast('Media asset archived.');await load()}}catch(err){toast(err.message,true)}});
 load();
 </script>
-  <div id="imageSizingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="imageSizingTitle" aria-hidden="true">
-    <div class="modal">
-      <h2 id="imageSizingTitle">App cover image sizing</h2>
-      <p>Wide landscape images fit the Apps &amp; Services cards best.</p>
-      <p><strong>Good cover sizes:</strong></p>
-      <ul>
-        <li>1280 × 720 px</li>
-        <li>1600 × 900 px</li>
-        <li>1920 × 1080 px</li>
-      </ul>
-      <p><strong>Recommended standard:</strong> 1600 × 900 px.</p>
-      <p>Square or portrait artwork can still be uploaded, but it may behave differently depending on how the card is displayed:</p>
-      <ul>
-        <li><strong>Cover-style fitting</strong> can crop the outer edges to fill the frame.</li>
-        <li><strong>Contain-style fitting</strong> preserves the full image but may leave empty space on the sides.</li>
-      </ul>
-      <p>For square artwork that should fill the card without cropping, place the artwork centered on a 1600 × 900 dark or brand-colored background canvas before uploading. Avoid stretching the original artwork.</p>
-      <div class="modal-actions"><button id="imageSizingCloseBtn" class="btn" type="button">Close</button></div>
-    </div>
-  </div>
 </body>
 </html>
