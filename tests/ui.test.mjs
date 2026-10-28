@@ -534,3 +534,18 @@ test('media library shows recommended app cover dimensions', async () => {
     assert.match(html, /1820 × 1080 px/);
     assert.match(html, /JPG, PNG, or WebP up to 12 MB/);
 });
+
+
+test('media library provides accessible image sizing help modal', async () => {
+    const html = await readFile('public/admin/media/index.html', 'utf8');
+    assert.match(html, /id="imageSizingHelpBtn"/);
+    assert.match(html, /id="imageSizingModal"/);
+    assert.match(html, /role="dialog"/);
+    assert.match(html, /aria-modal="true"/);
+    assert.match(html, /1280 × 720 px/);
+    assert.match(html, /1600 × 900 px/);
+    assert.match(html, /1920 × 1080 px/);
+    assert.match(html, /Recommended standard:<\/strong> 1600 × 900 px/);
+    assert.match(html, /closeSizingModal/);
+    assert.match(html, /e\.key==='Escape'/);
+});
