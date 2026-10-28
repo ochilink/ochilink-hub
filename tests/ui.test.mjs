@@ -574,3 +574,13 @@ test('landing light-mode readability override does not recolor links or buttons'
         /:is\(\.text-white, \[class\*='text-white\/'\]\):not\(a\):not\(button\)/
     );
 });
+
+
+test('media sizing modal exists before script initialization', async () => {
+    const html = await readFile('public/admin/media/index.html', 'utf8');
+    const modalIndex = html.indexOf('id="imageSizingModal"');
+    const scriptIndex = html.indexOf('<script>');
+    assert.ok(modalIndex >= 0);
+    assert.ok(scriptIndex >= 0);
+    assert.ok(modalIndex < scriptIndex);
+});
