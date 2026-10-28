@@ -556,3 +556,12 @@ test('admin sidebar exposes the Media Library route', async () => {
     assert.match(html, /id:"Media Library",icon:"▣"/);
     assert.match(html, /c\.id==="Media Library"\?location\.assign\("\/admin\/media\/"\)/);
 });
+
+
+test('light-mode dark CTAs force white text for mobile contrast', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /href:"#apps",style:a\?void 0:\{color:"#fff"\}/);
+    assert.match(html, /style:t===h\.id&&!a\?\{color:"#fff"\}:void 0/);
+    assert.match(html, /Request consultation →/);
+    assert.match(html, /onClick:\(\)=>location\.assign\("\/booking"\),style:a\?void 0:\{color:"#fff"\}/);
+});
