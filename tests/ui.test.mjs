@@ -565,3 +565,12 @@ test('light-mode dark CTAs force white text for mobile contrast', async () => {
     assert.match(html, /Request consultation →/);
     assert.match(html, /onClick:\(\)=>location\.assign\("\/booking"\),style:a\?void 0:\{color:"#fff"\}/);
 });
+
+
+test('landing light-mode readability override does not recolor links or buttons', async () => {
+    const css = await readFile('public/assets/hub-readability.css', 'utf8');
+    assert.match(
+        css,
+        /:is\(\.text-white, \[class\*='text-white\/'\]\):not\(a\):not\(button\)/
+    );
+});
