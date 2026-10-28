@@ -527,3 +527,10 @@ test('public app cards preserve full cover artwork without cropping', async () =
     assert.match(html, /object-contain bg-black/);
     assert.doesNotMatch(html, /object-cover transition duration-500 group-hover:scale-\[1\.04\]/);
 });
+
+
+test('media library shows recommended app cover dimensions', async () => {
+    const html = await readFile('public/admin/media/index.html', 'utf8');
+    assert.match(html, /1820 × 1080 px/);
+    assert.match(html, /JPG, PNG, or WebP up to 12 MB/);
+});
