@@ -17,7 +17,13 @@
     .thumb{aspect-ratio:16/9;background:#080d16}.thumb img{width:100%;height:100%;object-fit:cover}.body{padding:12px;display:grid;gap:9px}.name{font-weight:800;overflow-wrap:anywhere}.meta{font-size:11px;color:var(--muted)}
     .notice{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#eafcf7;color:#06261e;padding:10px 14px;border-radius:999px;font-size:12px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.25);z-index:10}.error{background:#3a151c;color:#ffdfe5}.hidden{display:none!important}.empty{padding:36px;text-align:center;color:var(--muted);grid-column:1/-1}
     @media(max-width:1000px){.library{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:720px){.wrap{padding:14px}.top{display:block}.top .actions{margin-top:12px}.grid,.library{grid-template-columns:1fr}}
-  </style>
+      .help-link{display:inline-flex;align-items:center;gap:6px;margin-top:8px;background:transparent;border:0;color:#8fb6ff;padding:0;cursor:pointer;font:inherit}
+    .help-link:hover{text-decoration:underline}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.72);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+    .modal-backdrop.open{display:flex}
+    .modal{width:min(100%,620px);max-height:88vh;overflow:auto;background:#111827;border:1px solid #2a3854;border-radius:18px;padding:22px;box-shadow:0 24px 80px rgba(0,0,0,.45)}
+    .modal h2{margin:0 0 12px}.modal p,.modal li{color:#a8b7d2;line-height:1.6}.modal ul{padding-left:20px}.modal .modal-actions{display:flex;justify-content:flex-end;margin-top:18px}
+</style>
 </head>
 <body>
 <div class="wrap">
@@ -29,7 +35,8 @@
   <div class="grid">
     <section class="panel">
       <h2>Upload image</h2>
-      <p class="small">JPG, PNG, or WebP up to 12 MB. For the best Apps &amp; Services card fit, use a wide cover around <strong>1820 × 1080 px</strong>. Choose an app now or leave the asset in the shared library.</p>
+      <p class="small">JPG, PNG, or WebP up to 12 MB. For the best Apps &amp; Services card fit, use a wide landscape cover. Choose an app now or leave the asset in the shared library.</p>
+      <button id="imageSizingHelpBtn" class="help-link" type="button" aria-haspopup="dialog" aria-controls="imageSizingModal">Image sizing help ↗</button>
       <div style="display:grid;gap:10px;margin-top:14px">
         <select id="uploadApp" class="field"></select>
         <input id="fileInput" class="field" type="file" accept="image/jpeg,image/png,image/webp">
@@ -70,8 +77,34 @@ function renderSelectors(){const upload=$('#uploadApp'),filter=$('#filterApp');c
 function renderLibrary(){const box=$('#library');$('#summary').textContent=state.media.length+' active image'+(state.media.length===1?'':'s');if(!state.media.length){box.innerHTML='<div class="empty">No media assets found for this filter.</div>';return}box.innerHTML=state.media.map(m=>'<article class="card" data-id="'+m.id+'"><div class="thumb"><img src="'+esc(m.public_url)+'" alt="'+esc(m.alt_text||'')+'" loading="lazy"></div><div class="body"><div><div class="name">'+esc(m.label||m.original_name)+'</div><div class="meta">'+esc(m.content_type)+' · '+Math.round(Number(m.byte_size||0)/1024)+' KB'+(m.width&&m.height?' · '+m.width+'×'+m.height:'')+'</div></div><select class="field asset-app">'+options(m.app_id,false)+'</select><input class="field asset-label" maxlength="160" value="'+esc(m.label||'')+'" placeholder="Internal label"><input class="field asset-alt" maxlength="300" value="'+esc(m.alt_text||'')+'" placeholder="Alt text"><div class="actions"><button class="btn" data-save>Save metadata</button><button class="btn primary" data-cover>Use as app cover</button><a class="btn" href="'+esc(m.public_url)+'" target="_blank" rel="noopener">Open ↗</a><button class="btn danger" data-archive>Archive</button></div></div></article>').join('')}
 $('#filterApp').addEventListener('change',load);$('#refreshBtn').addEventListener('click',load);
 $('#uploadBtn').addEventListener('click',async()=>{const file=$('#fileInput').files[0];if(!file)return toast('Choose an image.',true);if(!['image/jpeg','image/png','image/webp'].includes(file.type))return toast('Use a JPG, PNG, or WebP image.',true);try{const dims=await imageSize(file);toast('Authorizing media upload…');const begin=await api('begin-upload',{method:'POST',body:{app_id:$('#uploadApp').value||null,filename:file.name,byte_size:file.size,content_type:file.type}});const put=await fetch(begin.upload_url,{method:'PUT',headers:{'Content-Type':file.type,'x-vercel-blob-access':'public'},body:file});if(!put.ok)throw new Error('Media upload failed.');const blob=await put.json();if(blob.pathname!==begin.pathname)throw new Error('Storage returned an unexpected media path.');await api('complete-upload',{method:'POST',body:{media_id:begin.media_id,pathname:blob.pathname,public_url:blob.url,width:dims.width,height:dims.height,label:$('#labelInput').value,alt_text:$('#altInput').value}});$('#fileInput').value='';$('#labelInput').value='';$('#altInput').value='';toast('Image uploaded to Media Library.');await load()}catch(e){toast(e.message,true)}});
+const sizingModal=$('#imageSizingModal');
+$('#imageSizingHelpBtn').addEventListener('click',()=>{sizingModal.classList.add('open');sizingModal.setAttribute('aria-hidden','false');$('#imageSizingCloseBtn').focus()});
+function closeSizingModal(){sizingModal.classList.remove('open');sizingModal.setAttribute('aria-hidden','true');$('#imageSizingHelpBtn').focus()}
+$('#imageSizingCloseBtn').addEventListener('click',closeSizingModal);
+sizingModal.addEventListener('click',e=>{if(e.target===sizingModal)closeSizingModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sizingModal.classList.contains('open'))closeSizingModal()});
 $('#library').addEventListener('click',async e=>{const card=e.target.closest('[data-id]');if(!card)return;const id=card.dataset.id,appId=card.querySelector('.asset-app').value||null;try{if(e.target.closest('[data-save]')){await api('update',{method:'PUT',body:{id,app_id:appId,label:card.querySelector('.asset-label').value,alt_text:card.querySelector('.asset-alt').value}});toast('Media metadata saved.');await load()}else if(e.target.closest('[data-cover]')){if(!appId)return toast('Choose an app before assigning a cover.',true);await api('assign-cover',{method:'PUT',body:{media_id:id,app_id:appId}});toast('App cover updated.');await load()}else if(e.target.closest('[data-archive]')){if(!confirm('Archive this media asset?'))return;await api('archive',{method:'DELETE',body:{id}});toast('Media asset archived.');await load()}}catch(err){toast(err.message,true)}});
 load();
 </script>
+  <div id="imageSizingModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="imageSizingTitle" aria-hidden="true">
+    <div class="modal">
+      <h2 id="imageSizingTitle">App cover image sizing</h2>
+      <p>Wide landscape images fit the Apps &amp; Services cards best.</p>
+      <p><strong>Good cover sizes:</strong></p>
+      <ul>
+        <li>1280 × 720 px</li>
+        <li>1600 × 900 px</li>
+        <li>1920 × 1080 px</li>
+      </ul>
+      <p><strong>Recommended standard:</strong> 1600 × 900 px.</p>
+      <p>Square or portrait artwork can still be uploaded, but it may behave differently depending on how the card is displayed:</p>
+      <ul>
+        <li><strong>Cover-style fitting</strong> can crop the outer edges to fill the frame.</li>
+        <li><strong>Contain-style fitting</strong> preserves the full image but may leave empty space on the sides.</li>
+      </ul>
+      <p>For square artwork that should fill the card without cropping, place the artwork centered on a 1600 × 900 dark or brand-colored background canvas before uploading. Avoid stretching the original artwork.</p>
+      <div class="modal-actions"><button id="imageSizingCloseBtn" class="btn" type="button">Close</button></div>
+    </div>
+  </div>
 </body>
 </html>
