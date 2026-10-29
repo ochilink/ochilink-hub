@@ -71,7 +71,7 @@ test('landing renders database catalog and pricing with the login navigation', a
         );
         const button = [...document.querySelectorAll('button')].find(el => el.textContent === 'Schedule Consultation');
         assert.match(button.getAttribute('class'), /rounded-full/);
-        assert.equal(document.querySelector('a[href="/admin/"]').textContent, 'Login →');
+        assert.equal(document.querySelector('a[href="/account/"]').textContent, 'Client Login →');
         assert.equal(requests, 0);
     } finally {
         dom.window.close();
@@ -413,10 +413,11 @@ test('landing hero stats use stable label keys during loading', async () => {
 });
 
 
-test('footer exposes a direct rental application link', async () => {
+test('footer does not hardcode rental links and uses live app data', async () => {
     const html = await readFile('public/index.html', 'utf8');
-    assert.match(html, /href:"\/rental-application\//);
-    assert.match(html, /children:"Rental Application"/);
+    assert.doesNotMatch(html, /href:"\/rental-application\//);
+    assert.match(html, /hub\.apps\.filter\(\(app\)=>app\.status==="live"&&app\.production_link\)/);
+    assert.match(html, /children:app\.name/);
 });
 
 
