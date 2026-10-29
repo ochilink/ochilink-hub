@@ -584,3 +584,10 @@ test('media sizing modal exists before script initialization', async () => {
     assert.ok(scriptIndex >= 0);
     assert.ok(modalIndex < scriptIndex);
 });
+
+
+test('public app cover images do not scale and clip during scroll', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /object-contain bg-black transition-\[filter\] duration-300 group-hover:brightness-110/);
+    assert.doesNotMatch(html, /group-hover:scale-\[1\.02\]/);
+});
