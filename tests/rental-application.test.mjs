@@ -79,7 +79,7 @@ test('rental dark mode keeps date controls and green status text readable', () =
   const css = fs.readFileSync(new URL('../public/assets/hub-rental.css', import.meta.url), 'utf8');
   assert.match(css, /\[data-theme=dark\][\s\S]*--green-dark:#A7E99A/);
   assert.match(css, /\[data-theme=dark\] input\[type="date"\][\s\S]*color-scheme:dark/);
-  assert.match(css, /\[data-theme=dark\] input\[type="date"\]::-webkit-calendar-picker-indicator[\s\S]*filter:invert\(1\) brightness\(1\.7\)/);
+  assert.match(css, /\[data-theme=dark\] input\[type="date"\]::-webkit-calendar-picker-indicator[\s\S]*stroke='%23F8FAFC'[\s\S]*filter:none/);
 });
 
 
