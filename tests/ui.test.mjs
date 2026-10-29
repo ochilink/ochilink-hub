@@ -71,7 +71,7 @@ test('landing renders database catalog and pricing with the login navigation', a
         );
         const button = [...document.querySelectorAll('button')].find(el => el.textContent === 'Schedule Consultation');
         assert.match(button.getAttribute('class'), /rounded-full/);
-        assert.equal(document.querySelector('a[href="/account/"]').textContent, 'Client Login →');
+        assert.equal(document.querySelector('a[href="/account/"]').textContent, 'Login →');
         assert.equal(requests, 0);
     } finally {
         dom.window.close();
