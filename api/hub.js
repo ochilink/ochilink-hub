@@ -7,6 +7,7 @@ import { reserveSlot } from '../lib/scheduling.js';
 import { createRentalCheckout, getRentalFees, rentalApplicationStatus, latestCustomerRentalApplication, customerRentalApplication, reconcileRentalApplicationPayment } from '../lib/rental.js';
 import { adminRentalDocumentDownload, listRentalApplications, rentalApplicationAdminDetail, rentalFeeAdminSnapshot, updateRentalApplicationStatus, updateRentalFees } from '../lib/rental-admin.js';
 import { activatePreviewVersion, beginAppPreviewUpload, completeAppPreviewUpload, listAppPreviews, setPreviewEnabled } from '../lib/app-previews.js';
+import { archiveMediaAsset, assignMediaAsAppCover, beginMediaUpload, completeMediaUpload, listMediaAssets, updateMediaAsset } from '../lib/media-library.js';
 import {
     currentCustomer,
     customerSessionToken,
@@ -670,6 +671,38 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                     return res.json({ config: result });
                 }
                 fail(400, 'Invalid rental admin action.');
+            }
+            if (resource === 'media-library') {
+                const action = String(req.query?.action || 'list');
+                if (req.method === 'GET' && action === 'list')
+                    return res.json(await listMediaAssets(pool, req.query?.app_id || null));
+                if (req.method === 'POST' && action === 'begin-upload')
+                    return res.status(201).json(await beginMediaUpload(pool, user.id, body));
+                if (req.method === 'POST' && action === 'complete-upload') {
+                    const result = await transaction(pool, (client) =>
+                        completeMediaUpload(client, user.id, body),
+                    );
+                    return res.json({ media: result });
+                }
+                if (req.method === 'PUT' && action === 'update') {
+                    const result = await transaction(pool, (client) =>
+                        updateMediaAsset(client, user.id, body),
+                    );
+                    return res.json({ media: result });
+                }
+                if (req.method === 'PUT' && action === 'assign-cover') {
+                    const result = await transaction(pool, (client) =>
+                        assignMediaAsAppCover(client, user.id, body),
+                    );
+                    return res.json(result);
+                }
+                if (req.method === 'DELETE' && action === 'archive') {
+                    const result = await transaction(pool, (client) =>
+                        archiveMediaAsset(client, user.id, body.id),
+                    );
+                    return res.json(result);
+                }
+                fail(400, 'Invalid media library action.');
             }
             if (resource === 'app-preview') {
                 const action = String(req.query?.action || 'list');

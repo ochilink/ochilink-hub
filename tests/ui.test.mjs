@@ -71,7 +71,7 @@ test('landing renders database catalog and pricing with the login navigation', a
         );
         const button = [...document.querySelectorAll('button')].find(el => el.textContent === 'Schedule Consultation');
         assert.match(button.getAttribute('class'), /rounded-full/);
-        assert.equal(document.querySelector('a[href="/admin/"]').textContent, 'Login →');
+        assert.equal(document.querySelector('a[href="/account/"]').textContent, 'Login →');
         assert.equal(requests, 0);
     } finally {
         dom.window.close();
@@ -413,10 +413,11 @@ test('landing hero stats use stable label keys during loading', async () => {
 });
 
 
-test('footer exposes a direct rental application link', async () => {
+test('footer does not hardcode rental links and uses live app data', async () => {
     const html = await readFile('public/index.html', 'utf8');
-    assert.match(html, /href:"\/rental-application\//);
-    assert.match(html, /children:"Rental Application"/);
+    assert.doesNotMatch(html, /href:"\/rental-application\//);
+    assert.match(html, /hub\.apps\.filter\(\(app\)=>app\.status==="live"&&app\.production_link\)/);
+    assert.match(html, /children:app\.name/);
 });
 
 
@@ -485,4 +486,112 @@ test('public pages do not render literal backslash-n artifacts near the head', a
         assert.doesNotMatch(html, /<\/script>\\n/);
         assert.doesNotMatch(html, /\\n<\/head>/);
     }
+});
+
+
+test('admin exposes General Media Library alongside HTML previews', async () => {
+    const [admin, media] = await Promise.all([
+        readFile('public/admin/index.html', 'utf8'),
+        readFile('public/admin/media/index.html', 'utf8'),
+    ]);
+    assert.match(admin, /href:"\/admin\/media\//);
+    assert.match(admin, /children:"Media Library"/);
+    assert.match(admin, /href:"\/admin\/previews\//);
+    assert.match(media, /General Media Library/);
+    assert.match(media, /accept="image\/jpeg,image\/png,image\/webp"/);
+    assert.match(media, /Use as app cover/);
+    assert.match(media, /Customer\/private documents never belong here/);
+});
+
+test('media library API is admin-only and uses dedicated storage configuration', async () => {
+    const [api, storage, migration, env] = await Promise.all([
+        readFile('api/hub.js', 'utf8'),
+        readFile('lib/media-storage.js', 'utf8'),
+        readFile('database/migrations/017_general_media_library.sql', 'utf8'),
+        readFile('.env.example', 'utf8'),
+    ]);
+    assert.match(api, /resource === 'media-library'/);
+    assert.match(api, /assignMediaAsAppCover/);
+    assert.match(storage, /MEDIA_BLOB_READ_WRITE_TOKEN/);
+    assert.match(storage, /image\/jpeg/);
+    assert.match(storage, /image\/png/);
+    assert.match(storage, /image\/webp/);
+    assert.match(storage, /12 \* 1024 \* 1024/);
+    assert.match(migration, /CREATE TABLE IF NOT EXISTS media_assets/);
+    assert.match(migration, /017_general_media_library/);
+    assert.match(env, /MEDIA_BLOB_READ_WRITE_TOKEN=/);
+});
+
+
+test('public app cards preserve full cover artwork without cropping', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /object-contain bg-black/);
+    assert.doesNotMatch(html, /object-cover transition duration-500 group-hover:scale-\[1\.04\]/);
+});
+
+
+test('media library shows recommended app cover dimensions', async () => {
+    const html = await readFile('public/admin/media/index.html', 'utf8');
+    assert.match(html, /1280 × 720 px/);
+    assert.match(html, /1600 × 900 px/);
+    assert.match(html, /1920 × 1080 px/);
+    assert.match(html, /Recommended standard:<\/strong> 1600 × 900 px/);
+    assert.match(html, /JPG, PNG, or WebP up to 12 MB/);
+});
+
+
+test('media library provides accessible image sizing help modal', async () => {
+    const html = await readFile('public/admin/media/index.html', 'utf8');
+    assert.match(html, /id="imageSizingHelpBtn"/);
+    assert.match(html, /id="imageSizingModal"/);
+    assert.match(html, /role="dialog"/);
+    assert.match(html, /aria-modal="true"/);
+    assert.match(html, /1280 × 720 px/);
+    assert.match(html, /1600 × 900 px/);
+    assert.match(html, /1920 × 1080 px/);
+    assert.match(html, /Recommended standard:<\/strong> 1600 × 900 px/);
+    assert.match(html, /closeSizingModal/);
+    assert.match(html, /e\.key==='Escape'/);
+});
+
+
+test('admin sidebar exposes the Media Library route', async () => {
+    const html = await readFile('public/admin/index.html', 'utf8');
+    assert.match(html, /id:"Media Library",icon:"▣"/);
+    assert.match(html, /c\.id==="Media Library"\?location\.assign\("\/admin\/media\/"\)/);
+});
+
+
+test('light-mode dark CTAs force white text for mobile contrast', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /href:"#apps",style:a\?void 0:\{color:"#fff"\}/);
+    assert.match(html, /style:t===h\.id&&!a\?\{color:"#fff"\}:void 0/);
+    assert.match(html, /Request consultation →/);
+    assert.match(html, /onClick:\(\)=>location\.assign\("\/booking"\),style:a\?void 0:\{color:"#fff"\}/);
+});
+
+
+test('landing light-mode readability override does not recolor links or buttons', async () => {
+    const css = await readFile('public/assets/hub-readability.css', 'utf8');
+    assert.match(
+        css,
+        /:is\(\.text-white, \[class\*='text-white\/'\]\):not\(a\):not\(button\)/
+    );
+});
+
+
+test('media sizing modal exists before script initialization', async () => {
+    const html = await readFile('public/admin/media/index.html', 'utf8');
+    const modalIndex = html.indexOf('id="imageSizingModal"');
+    const scriptIndex = html.indexOf('<script>');
+    assert.ok(modalIndex >= 0);
+    assert.ok(scriptIndex >= 0);
+    assert.ok(modalIndex < scriptIndex);
+});
+
+
+test('public app cover images do not scale and clip during scroll', async () => {
+    const html = await readFile('public/index.html', 'utf8');
+    assert.match(html, /object-contain bg-black transition-\[filter\] duration-300 group-hover:brightness-110/);
+    assert.doesNotMatch(html, /group-hover:scale-\[1\.02\]/);
 });

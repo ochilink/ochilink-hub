@@ -9,7 +9,8 @@ test('public app cards render cover images with a branded fallback', () => {
   assert.match(hook, /cover: app\.cover_image_url \|\| ''/);
   assert.match(html, /h\.cover\?m\("button"/);
   assert.match(html, /loading:"lazy"/);
-  assert.match(html, /group-hover:scale-\[1\.04\]/);
+  assert.match(html, /object-contain bg-black transition-\[filter\] duration-300 group-hover:brightness-110/);
+  assert.doesNotMatch(html, /group-hover:scale-\[/);
   assert.match(html, /radial-gradient\(circle at 20% 20%/);
 });
 
