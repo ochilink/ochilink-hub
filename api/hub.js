@@ -1,3 +1,4 @@
+import {signinRequest,exchangeHandoff} from '../lib/platform-signin.js';
 import { platformRequest } from '../lib/platform.js';
 import { createSmokeTestHandler } from './_admin-live-smoke-test.js';
 import { featureRequest, capabilities } from '../lib/features.js';
@@ -327,7 +328,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             if (req.method !== 'GET') {
                 const host = req.headers.host;
                 // Reject browser mutations without a matching Origin. No wildcard CORS.
-                if (req.headers.origin !== `https://${host}`)
+                if (resource!=='platform-token' && req.headers.origin !== `https://${host}`)
                     fail(403, 'Request origin rejected.');
                 if (
                     !(req.headers['content-type'] || '').startsWith(
@@ -356,6 +357,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
                 });
             }
             const pool = poolProvider();
+            if(resource==='platform-token'){await throttle(pool,'platform-token:'+clientIp(req),40,req,'platform_token');res.setHeader('Cache-Control','no-store');return res.json(await exchangeHandoff({pool,body,fail,req,audit}));}
             if (resource === 'public' && req.method === 'GET') {
                 const apps = await pool.query(
                     `SELECT a.id,a.slug,a.name,a.description,a.link,a.tech,a.status,a.sort_order,a.cover_image_url,
@@ -501,6 +503,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             if (resource === 'login' && req.method === 'POST')
                 return res.json(await login(pool, req, res, body));
             const user = await currentUser(pool, req);
+            if(await signinRequest({resource,req,res,body,pool,user,fail,audit}))return;
             if(await platformRequest({resource,req,res,pool,user,fail,audit}))return;
             if (
                 await featureRequest({
