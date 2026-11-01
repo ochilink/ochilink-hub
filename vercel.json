@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/connect",
+      "destination": "/connect/index.html"
+    },
+    {
       "source": "/workspace",
       "destination": "/workspace/index.html"
     },
@@ -65,7 +69,7 @@
   "functions": {
     "api/hub.js": {
       "maxDuration": 60,
-      "includeFiles": "database/migrations/018_platform_workspace.sql"
+      "includeFiles": "database/migrations/{018_platform_workspace,019_linked_sign_in}.sql"
     },
     "api/maintenance.js": {
       "maxDuration": 60
