@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/workspace",
+      "destination": "/workspace/index.html"
+    },
+    {
       "source": "/api/admin-live-smoke-test",
       "destination": "/api/hub?resource=admin-live-smoke-test"
     },
@@ -60,7 +64,8 @@
   ],
   "functions": {
     "api/hub.js": {
-      "maxDuration": 60
+      "maxDuration": 60,
+      "includeFiles": "database/migrations/018_platform_workspace.sql"
     },
     "api/maintenance.js": {
       "maxDuration": 60

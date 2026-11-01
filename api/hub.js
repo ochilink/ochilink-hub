@@ -1,3 +1,4 @@
+import { platformRequest } from '../lib/platform.js';
 import { createSmokeTestHandler } from './_admin-live-smoke-test.js';
 import { featureRequest, capabilities } from '../lib/features.js';
 import { useMfa, encryptionReady, canonicalOrigin } from '../lib/security.js';
@@ -500,6 +501,7 @@ export function createHandler(poolProvider = getPool, stripeProvider = stripeCli
             if (resource === 'login' && req.method === 'POST')
                 return res.json(await login(pool, req, res, body));
             const user = await currentUser(pool, req);
+            if(await platformRequest({resource,req,res,pool,user,fail,audit}))return;
             if (
                 await featureRequest({
                     resource,
